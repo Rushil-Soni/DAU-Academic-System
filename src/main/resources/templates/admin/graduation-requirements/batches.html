@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Graduation Requirements - Batches</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" th:href="@{/css/navbar.css}">
+    <style>
+        .header-title {
+            color: #003366;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .table-header {
+            background-color: #003366;
+            color: white;
+            font-weight: 600;
+        }
+        .btn-action {
+            padding: 5px 12px;
+            font-size: 14px;
+        }
+        .table-hover tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<div th:replace="fragments/header :: header"></div>
+
+<!-- NAVBAR -->
+<div th:replace="fragments/navbar :: navbar"></div>
+
+<div class="container mt-4">
+
+    <h2 class="header-title">Graduation Requirements - Select Batch</h2>
+    
+    <div class="alert alert-info" role="alert">
+        <i class="bi bi-info-circle"></i>
+        Select a batch to view graduation requirements status of all students in that batch.
+    </div>
+
+    <table class="table table-hover table-bordered">
+        <thead class="table-header">
+        <tr>
+            <th style="width: 12%;">Academic Year</th>
+            <th style="width: 40%;">Program / Specialization</th>
+            <th style="width: 12%;">Batch Name</th>
+            <th style="width: 12%;">Scheme</th>
+            <th style="width: 10%;">Capacity</th>
+            <th style="width: 14%;">Action</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr th:each="batch : ${batches}">
+            <td th:text="${batch.ayrname}"></td>
+            <td th:text="${batch.spldesc}"></td>
+            <td th:text="${batch.bchname}"></td>
+            <td th:text="${batch.schemeyear}"></td>
+            <td th:text="${batch.bchcapacity}"></td>
+            <td>
+                <a th:href="@{/admin/graduation-requirements/batches/{id}(id=${batch.bchid})}" 
+                   class="btn btn-sm btn-success btn-action">
+                    View Requirements
+                </a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div th:if="${#lists.isEmpty(batches)}" class="alert alert-warning" role="alert">
+        No batches available.
+    </div>
+
+</div>
+
+<!-- FOOTER -->
+<div th:replace="fragments/footer :: footer"></div>
+
+</body>
+</html>

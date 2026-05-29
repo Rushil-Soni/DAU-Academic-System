@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Term Courses</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" th:href="@{/css/navbar.css}">
+</head>
+
+<body>
+
+<!-- HEADER -->
+<div th:replace="fragments/header :: header"></div>
+
+<!-- NAVBAR -->
+<div th:replace="fragments/navbar :: navbar"></div>
+
+<div class="container mt-3">
+
+    <h2>Term Courses</h2>
+
+    <!-- Flash Messages -->
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${success}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${warning}" class="alert alert-warning alert-dismissible fade show" role="alert">
+        <span th:text="${warning}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${info}" class="alert alert-info alert-dismissible fade show" role="alert">
+        <span th:text="${info}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div th:each="academicYearEntry : ${coursesByAcademicYearThenTerm}">
+
+        <h3 class="mt-5" th:text="'Academic Year: ' + ${academicYearEntry.key}"></h3>
+
+        <div th:each="termEntry : ${academicYearEntry.value}">
+
+            <table class="table table-bordered mt-3">
+                <thead class="table-light">
+                <!-- Term row - with buttons for latest term per type -->
+                <tr th:if="${latestTermIds.contains(termIdMap[academicYearEntry.key][termEntry.key])}">
+                    <th colspan="4" style="background-color:#e9ecef;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span th:text="${termEntry.key}" style="font-weight:bold;"></span>
+                            <div>
+                                <form th:action="@{/admin/term-courses/pull-electives}" method="post" style="display:inline;">
+                                    <input type="hidden" name="termId" th:value="${termIdMap[academicYearEntry.key][termEntry.key]}" />
+                                    <button type="submit" class="btn btn-sm btn-outline-primary me-2">Pull Electives</button>
+                                </form>
+                                <a th:href="@{/admin/term-courses/edit(termId=${termIdMap[academicYearEntry.key][termEntry.key]})}" 
+                                   class="btn btn-sm btn-outline-secondary">Edit Term Courses</a>
+                                <a th:href="@{/admin/openfor(termId=${termIdMap[academicYearEntry.key][termEntry.key]})}" 
+                                   class="btn btn-sm btn-outline-secondary">Specify Open For</a>
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+                <!-- Term row - without buttons for older terms -->
+                <tr th:if="${!latestTermIds.contains(termIdMap[academicYearEntry.key][termEntry.key])}">
+                    <th colspan="4"
+                        th:text="${termEntry.key}"
+                        style="text-align:center; background-color:#e9ecef; font-weight:bold;">
+                    </th>
+                </tr>
+
+                <tr>
+                    <th style="background-color: #003366; color: white;">Course Code</th>
+                    <th style="background-color: #003366; color: white;">Course Title</th>
+                    <th style="background-color: #003366; color: white;">Course Type</th>
+                    <th style="background-color: #003366; color: white;">Credit Hours</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="tc : ${termEntry.value}">
+                    <td th:text="${tc.crscode}"></td>
+                    <td th:text="${tc.crsname}"></td>
+                    <td th:text="${tc.crstype}"></td>
+                    <td th:text="${tc.credithours}"></td>
+                </tr>
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+
+<!-- FOOTER -->
+<div th:replace="fragments/footer :: footer"></div>
+
+</div>
+
+</body>
+</html>

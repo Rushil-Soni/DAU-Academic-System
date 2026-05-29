@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}">
+    <meta name="_csrf_header" th:content="${_csrf != null ? _csrf.headerName : ''}">
+    <title>Course Type Conversions</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" th:href="@{/css/navbar.css}">
+    <style>
+        :root {
+            --dash-primary: #003366;
+            --dash-primary-light: #00509e;
+            --dash-accent: #0b7285;
+            --dash-bg: #f0f2f5;
+            --dash-card-bg: #ffffff;
+            --dash-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            --dash-radius: 12px;
+        }
+
+        body {
+            background-color: var(--dash-bg);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        .dashboard-container {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 28px 20px 40px;
+        }
+
+        .welcome-card {
+            background: linear-gradient(135deg, #003366 0%, #00509e 60%, #0b7285 100%);
+            border-radius: var(--dash-radius);
+            color: #fff;
+            padding: 28px 32px;
+            margin-bottom: 22px;
+            box-shadow: var(--dash-shadow);
+        }
+
+        .welcome-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            align-items: flex-start;
+        }
+
+        .welcome-card h2 {
+            font-weight: 700;
+            font-size: 1.55rem;
+            margin-bottom: 4px;
+        }
+
+        .welcome-subtitle {
+            font-size: 0.95rem;
+            opacity: 0.92;
+            max-width: 670px;
+        }
+
+        .welcome-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            margin-top: 14px;
+            font-size: 0.92rem;
+            opacity: 0.92;
+        }
+
+        .welcome-meta .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .view-switcher {
+            display: inline-flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding: 6px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 999px;
+        }
+
+        .view-switcher a {
+            color: rgba(255, 255, 255, 0.92);
+            text-decoration: none;
+            padding: 9px 14px;
+            border-radius: 999px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            transition: background-color 0.15s ease, color 0.15s ease;
+        }
+
+        .view-switcher a.active {
+            background: #fff;
+            color: var(--dash-primary);
+        }
+
+        .summary-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 16px;
+            margin-bottom: 26px;
+        }
+
+        .summary-stat {
+            background: var(--dash-card-bg);
+            border-radius: var(--dash-radius);
+            padding: 20px 22px;
+            box-shadow: var(--dash-shadow);
+            text-align: center;
+        }
+
+        .summary-stat .stat-number {
+            font-size: 1.9rem;
+            font-weight: 800;
+            line-height: 1.05;
+        }
+
+        .summary-stat .stat-label {
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #6c757d;
+            margin-top: 8px;
+        }
+
+        .section-title {
+            font-size: 1.18rem;
+            font-weight: 700;
+            color: var(--dash-primary);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-caption {
+            font-size: 0.92rem;
+            color: #5f6b78;
+            margin-bottom: 16px;
+        }
+
+        .type-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .type-card {
+            background: var(--dash-card-bg);
+            border-radius: var(--dash-radius);
+            box-shadow: var(--dash-shadow);
+            overflow: hidden;
+        }
+
+        .type-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #edf1f5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .type-heading {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .type-code {
+            font-weight: 700;
+            font-size: 1.02rem;
+            color: var(--dash-primary);
+        }
+
+        .type-cat {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 999px;
+            color: #fff;
+        }
+
+        .type-name {
+            font-size: 0.86rem;
+            color: #5f6b78;
+        }
+
+        .type-stats {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .mini-stat {
+            background: #f8fafc;
+            border: 1px solid #e9ecef;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 0.77rem;
+            font-weight: 700;
+            color: #38506a;
+        }
+
+        .table-wrap {
+            padding: 0 20px 16px;
+        }
+
+        .course-table {
+            margin-bottom: 0;
+            vertical-align: middle;
+        }
+
+        .course-table thead th {
+            font-size: 0.74rem;
+            text-transform: uppercase;
+            letter-spacing: 0.45px;
+            color: #5f6b78;
+            border-bottom: 1px solid #e9ecef;
+            padding-top: 12px;
+            padding-bottom: 10px;
+        }
+
+        .course-table td {
+            font-size: 0.88rem;
+            color: #2f3a45;
+            border-bottom: 1px solid #f1f4f7;
+            padding-top: 10px;
+            padding-bottom: 10px;
+        }
+
+        .course-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .course-code {
+            font-weight: 700;
+            color: #1e3a5f;
+        }
+
+        .course-name {
+            color: #5f6b78;
+            font-size: 0.83rem;
+        }
+
+        .current-type-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #edf2ff;
+            border: 1px solid #d9e2ff;
+            color: #1d4ed8;
+            border-radius: 999px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            padding: 4px 10px;
+        }
+
+        .changed-pill {
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.45px;
+            background: #fff4e6;
+            color: #fd7e14;
+            border: 1px solid #ffe1bf;
+            border-radius: 999px;
+            padding: 2px 8px;
+            margin-left: 6px;
+            font-weight: 700;
+        }
+
+        .conversion-select {
+            min-width: 150px;
+            font-size: 0.84rem;
+            font-weight: 600;
+            border-radius: 8px;
+            border-color: #c6d3e1;
+        }
+
+        .alert-note {
+            border-radius: 10px;
+            font-size: 0.9rem;
+        }
+
+        .cat-CORE { background: #003366; }
+        .cat-ELECTIVE { background: #6f42c1; }
+        .cat-INTERNSHIP { background: #0d6efd; }
+        .cat-PROJECT { background: #20c997; }
+        .cat-default { background: #6c757d; }
+
+        .text-success-strong { color: #198754; }
+        .text-info-strong { color: #0d6efd; }
+        .text-warning-strong { color: #fd7e14; }
+
+        @media (max-width: 860px) {
+            .welcome-top {
+                flex-direction: column;
+            }
+
+            .table-wrap {
+                padding: 0 12px 12px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .welcome-meta {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .type-header {
+                padding: 14px;
+            }
+
+            .conversion-select {
+                min-width: 128px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div th:replace="fragments/header :: header"></div>
+<div th:replace="fragments/navbar :: navbar"></div>
+
+<div class="dashboard-container">
+    <div class="welcome-card">
+        <div class="welcome-top">
+            <div>
+                <h2>
+                    <i class="bi bi-arrow-left-right"></i>
+                    Course Type Conversions for <span th:text="${studentName}">Student</span>
+                </h2>
+                <div class="welcome-subtitle">
+                    Convert only eligible extra courses or previously changed courses.
+                </div>
+            </div>
+        </div>
+
+        <div class="welcome-meta">
+            <div class="meta-item">
+                <i class="bi bi-person-badge"></i>
+                <span th:text="${studentId}">20XXXXX</span>
+            </div>
+            <div class="meta-item">
+                <i class="bi bi-people-fill"></i>
+                <span th:text="${batchName}">Batch</span>
+            </div>
+            <div class="meta-item">
+                <i class="bi bi-calendar3"></i>
+                <span th:text="${currentSemester}">Semester</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="summary-row">
+        <div class="summary-stat">
+            <div class="stat-number text-info-strong" th:text="${totalTypes}">0</div>
+            <div class="stat-label">Course Types Listed</div>
+        </div>
+        <div class="summary-stat">
+            <div class="stat-number text-success-strong" th:text="${totalCourses}">0</div>
+            <div class="stat-label">Courses Considered</div>
+        </div>
+        <div class="summary-stat">
+            <div class="stat-number text-warning-strong" th:text="${totalMinCourses}">0</div>
+            <div class="stat-label">Total Minimum Courses</div>
+        </div>
+        <div class="summary-stat">
+            <div class="stat-number text-warning-strong" th:text="${overMinTypes}">0</div>
+            <div class="stat-label">Types Above Minimum</div>
+        </div>
+        <div class="summary-stat">
+            <div class="stat-number text-info-strong" th:text="${changedCourses}">0</div>
+            <div class="stat-label">Already Converted</div>
+        </div>
+    </div>
+
+    <div class="section-title">
+        <i class="bi bi-list-check"></i>
+        Course-Type-Wise Course List
+    </div>
+    <div class="section-caption">
+        Dropdown appears only when conversion is allowed: either the type is above minimum and has conversion rules, or the course was already converted earlier.
+    </div>
+
+    <div th:if="${#lists.isEmpty(groups)}" class="alert alert-info alert-note">
+        No eligible courses found for conversion for this student.
+    </div>
+
+    <div class="type-grid">
+        <div class="type-card" th:each="g : ${groups}">
+            <div class="type-header">
+                <div>
+                    <div class="type-heading">
+                        <span class="type-code" th:text="${g.ctpcode}">ICTE</span>
+                        <span class="type-cat"
+                              th:classappend="${'cat-' + (g.crscat != null ? g.crscat : 'default')}"
+                              th:text="${g.crscat != null ? g.crscat : 'OTHER'}">CORE</span>
+                    </div>
+                    <div class="type-name" th:text="${g.ctpname}">Course Type Name</div>
+                </div>
+                <div class="type-stats">
+                    <span class="mini-stat">Min: <span th:text="${g.minCourses}">0</span></span>
+                    <span class="mini-stat">Current: <span th:text="${g.totalCourses}">0</span></span>
+                    <span class="mini-stat" th:if="${g.excessCourses > 0}">Extra: <span th:text="${g.excessCourses}">0</span></span>
+                </div>
+            </div>
+
+            <div class="table-wrap">
+                <div class="table-responsive">
+                    <table class="table course-table">
+                        <thead>
+                        <tr>
+                            <th style="width: 18%;">Course</th>
+                            <th style="width: 32%;">Name</th>
+                            <th style="width: 22%;">Credits</th>
+                            <th style="width: 28%;">Current Type</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="c : ${g.courses}">
+                            <td>
+                                <div class="course-code" th:text="${c.crscode}">CS101</div>
+                            </td>
+                            <td>
+                                <div th:text="${c.crsname}">Course Name</div>
+                            </td>
+                            <td th:text="${c.creditHours}">4.00 (3.00 + 0.00 + 2.00)</td>
+                            <td>
+                                <span th:if="${!c.dropdownEnabled}" class="current-type-badge">
+                                    <i class="bi bi-tag-fill"></i>
+                                    <span th:text="${c.currCtpcode}">ICTE</span>
+                                </span>
+
+                                <select th:if="${c.dropdownEnabled}"
+                                        class="form-select form-select-sm conversion-select"
+                                        th:attr="data-srcid=${c.srcid}"
+                                        th:value="${c.currCtpid}">
+                                    <option th:each="opt : ${c.options}"
+                                            th:value="${opt.ctpid}"
+                                            th:text="${opt.ctpcode}"
+                                            th:selected="${opt.ctpid == c.currCtpid}">
+                                        Type
+                                    </option>
+                                </select>
+
+                                <span th:if="${c.changedFromOriginal}" class="changed-pill">Changed</span>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(g.courses)}">
+                            <td colspan="4" class="text-muted">No courses taken yet for this course type.</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="fragments/footer :: footer"></div>
+
+<script>
+    (() => {
+        const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content') || '';
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content') || '';
+        const endpoint = '/student/graduation-requirements/course-conversions/change-type';
+
+        document.querySelectorAll('.conversion-select').forEach((selectEl) => {
+            selectEl.dataset.prevValue = selectEl.value;
+
+            selectEl.addEventListener('change', async (event) => {
+                const el = event.currentTarget;
+                const srcid = el.dataset.srcid;
+                const ctpid = el.value;
+                const previous = el.dataset.prevValue;
+
+                if (!srcid || !ctpid || ctpid === previous) {
+                    return;
+                }
+
+                el.disabled = true;
+                try {
+                    const body = new URLSearchParams({ srcid, ctpid });
+                    const headers = { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' };
+                    if (csrfToken && csrfHeader) {
+                        headers[csrfHeader] = csrfToken;
+                    }
+
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers,
+                        body: body.toString()
+                    });
+
+                    const data = await response.json();
+                    if (!response.ok || !data.success) {
+                        throw new Error(data.message || 'Unable to update course type.');
+                    }
+
+                    window.location.reload();
+                } catch (error) {
+                    alert(error.message || 'Unable to update course type.');
+                    el.value = previous;
+                    el.disabled = false;
+                }
+            });
+        });
+    })();
+</script>
+</body>
+</html>

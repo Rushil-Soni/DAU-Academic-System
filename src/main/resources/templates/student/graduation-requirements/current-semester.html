@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Student Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" th:href="@{/css/navbar.css}">
+    <style>
+        :root {
+            --dash-primary: #003366;
+            --dash-primary-light: #00509e;
+            --dash-bg: #f0f2f5;
+            --dash-card-bg: #ffffff;
+            --dash-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            --dash-radius: 12px;
+        }
+
+        body {
+            background-color: var(--dash-bg);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        .dashboard-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 28px 20px 40px;
+        }
+
+        /* --- Welcome banner --- */
+        .welcome-card {
+            background: linear-gradient(135deg, #003366 0%, #00509e 100%);
+            border-radius: var(--dash-radius);
+            color: #fff;
+            padding: 28px 32px;
+            margin-bottom: 28px;
+            box-shadow: var(--dash-shadow);
+        }
+        .welcome-card h2 {
+            font-weight: 700;
+            font-size: 1.55rem;
+            margin-bottom: 4px;
+        }
+        .welcome-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            margin-top: 12px;
+            font-size: 0.92rem;
+            opacity: 0.92;
+        }
+        .welcome-meta .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* --- Section header --- */
+        .section-title {
+            font-size: 1.18rem;
+            font-weight: 700;
+            color: var(--dash-primary);
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* --- Summary row --- */
+        .summary-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+        .summary-stat {
+            background: var(--dash-card-bg);
+            border-radius: var(--dash-radius);
+            padding: 20px 22px;
+            box-shadow: var(--dash-shadow);
+            text-align: center;
+        }
+        .summary-stat .stat-number {
+            font-size: 2rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+        .summary-stat .stat-label {
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #6c757d;
+            margin-top: 6px;
+        }
+        .stat-success { color: #198754; }
+        .stat-info    { color: #0d6efd; }
+        .stat-warning { color: #fd7e14; }
+        .stat-danger  { color: #dc3545; }
+
+        /* --- Progress cards --- */
+        .progress-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 14px;
+        }
+        .progress-card {
+            background: var(--dash-card-bg);
+            border-radius: var(--dash-radius);
+            padding: 20px 24px;
+            box-shadow: var(--dash-shadow);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .progress-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+        }
+
+        .pc-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .pc-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .pc-code {
+            font-weight: 700;
+            font-size: 1.05rem;
+            color: var(--dash-primary);
+        }
+        .pc-cat {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #fff;
+        }
+        .cat-CORE       { background: #003366; }
+        .cat-ELECTIVE    { background: #6f42c1; }
+        .cat-INTERNSHIP  { background: #0d6efd; }
+        .cat-PROJECT     { background: #20c997; }
+        .cat-default     { background: #6c757d; }
+
+        .pc-name {
+            font-size: 0.84rem;
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+
+        /* Progress bar */
+        .pc-bar-wrap {
+            background: #e9ecef;
+            border-radius: 6px;
+            height: 10px;
+            overflow: hidden;
+        }
+        .pc-bar-fill {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.6s ease;
+        }
+
+        .pc-counts {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.78rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        /* Percentage badge */
+        .pc-pct {
+            min-width: 60px;
+            text-align: center;
+            font-size: 1.3rem;
+            font-weight: 800;
+            flex-shrink: 0;
+        }
+
+        /* Status icon */
+        .pc-status {
+            flex-shrink: 0;
+            font-size: 1.3rem;
+        }
+
+        /* Bar colors */
+        .bar-success  { background: #198754; }
+        .bar-info     { background: #0d6efd; }
+        .bar-warning  { background: #fd7e14; }
+        .bar-danger   { background: #dc3545; }
+        .bar-secondary{ background: #adb5bd; }
+
+        .text-color-success  { color: #198754; }
+        .text-color-info     { color: #0d6efd; }
+        .text-color-warning  { color: #fd7e14; }
+        .text-color-danger   { color: #dc3545; }
+        .text-color-secondary{ color: #adb5bd; }
+
+        @media (max-width: 600px) {
+            .progress-card { flex-direction: column; text-align: center; gap: 10px; }
+            .welcome-meta  { flex-direction: column; gap: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <div th:replace="fragments/header :: header"></div>
+
+    <!-- NAVBAR -->
+    <div th:replace="fragments/navbar :: navbar"></div>
+
+    <div class="dashboard-container">
+
+        <!-- ===== WELCOME BANNER ===== -->
+        <div class="welcome-card">
+            <h2>
+                <i class="bi bi-mortarboard-fill"></i>
+                Progress till Current Semester for <span th:text="${studentName}">Student</span>
+            </h2>
+            <div class="welcome-meta">
+                <div class="meta-item">
+                    <i class="bi bi-person-badge"></i>
+                    <span th:text="${studentId}">20XXXXX</span>
+                </div>
+                <div class="meta-item">
+                    <i class="bi bi-people-fill"></i>
+                    <span th:text="${batchName}">Batch</span>
+                </div>
+                <div class="meta-item">
+                    <i class="bi bi-calendar3"></i>
+                    <span th:text="${currentSemester}">Semester</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== SUMMARY CARDS ===== -->
+        <div class="summary-row">
+            <div class="summary-stat">
+                <div class="stat-number stat-info" th:text="${#lists.size(progressList)}">0</div>
+                <div class="stat-label">Course Types</div>
+            </div>
+            <div class="summary-stat">
+                <div class="stat-number stat-success" th:text="${totalCompleted}">0</div>
+                <div class="stat-label">Courses Completed</div>
+            </div>
+            <div class="summary-stat">
+                <div class="stat-number stat-warning" th:text="${totalRequired}">0</div>
+                <div class="stat-label">Courses Required (Till Now)</div>
+            </div>
+            <div class="summary-stat">
+                <div class="stat-number"
+                     th:classappend="${typesFulfilled == typesWithRequirement} ? 'stat-success' : 'stat-info'"
+                     th:text="${typesFulfilled} + ' / ' + ${typesWithRequirement}">0/0</div>
+                <div class="stat-label">Types Fulfilled</div>
+            </div>
+        </div>
+
+        <!-- ===== PROGRESS SECTION ===== -->
+        <div class="section-title">
+            <i class="bi bi-bar-chart-line-fill"></i>
+            Course Requirement Progress &mdash; Till Current Semester
+        </div>
+
+        <div th:if="${#lists.isEmpty(progressList)}" class="alert alert-info">
+            No course type data available for this scheme.
+        </div>
+
+        <div class="progress-grid">
+            <div class="progress-card" th:each="p : ${progressList}">
+
+                <!-- Status icon -->
+                <div class="pc-status">
+                    <span th:if="${p.completedCount >= p.requiredCount}">
+                        <i class="bi bi-check-circle-fill text-color-success"></i>
+                    </span>
+                    <span th:if="${p.completedCount < p.requiredCount and p.completedCount > 0}">
+                        <i class="bi bi-arrow-up-circle-fill text-color-warning"></i>
+                    </span>
+                    <span th:if="${p.completedCount == 0 and p.requiredCount > 0}">
+                        <i class="bi bi-exclamation-circle-fill text-color-danger"></i>
+                    </span>
+                </div>
+
+                <!-- Info block -->
+                <div class="pc-info">
+                    <div class="pc-header">
+                        <span class="pc-code" th:text="${p.ctpcode}">CODE</span>
+                        <span class="pc-cat"
+                              th:classappend="${'cat-' + (p.crscat != null ? p.crscat : 'default')}"
+                              th:text="${p.crscat}">CAT</span>
+                    </div>
+                    <div class="pc-name" th:text="${p.ctpname}">Full Name</div>
+                    <div class="pc-bar-wrap">
+                        <div class="pc-bar-fill"
+                             th:classappend="${'bar-' + p.progressColor}"
+                             th:style="'width:' + ${p.percentage} + '%'">
+                        </div>
+                    </div>
+                    <div class="pc-counts">
+                        <span>
+                            <strong th:text="${p.completedCount}">0</strong> completed
+                        </span>
+                        <span>
+                            <strong th:text="${p.requiredCount}">0</strong> required
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Percentage -->
+                <div class="pc-pct"
+                     th:classappend="${'text-color-' + p.progressColor}">
+                    <span th:text="${p.percentage} + '%'">0%</span>
+                    <span th:if="${p.extraCount > 0}" style="font-size:1rem; display:block; margin-top:2px;" class="text-color-info">+<span th:text="${p.extraCount}">0</span></span>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- FOOTER -->
+    <div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>
