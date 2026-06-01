@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Registrations</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" th:href="@{/css/styleSrs.css}">
+    <link rel="stylesheet" th:href="@{/css/navbar.css}">
+    <link rel="stylesheet" th:href="@{/css/student-registration.css}">
+</head>
+<body class="registration-page">
+<!-- HEADER -->
+<div th:replace="fragments/header :: header"></div>
+
+<!-- NAVBAR -->
+<div th:replace="fragments/navbar :: navbar"></div>
+
+<main class="registration-layout">
+    <section class="registration-card">
+        <h2 class="registration-title">Registrations</h2>
+
+        <div th:if="${semestersbean.empty}" class="empty-state">
+            <p>No registrations found for this student.</p>
+        </div>
+
+        <div class="registration-table-wrap" th:if="${not semestersbean.empty}">
+            <div class="mb-3 registration-search-panel">
+                <label for="semester-search-input" class="form-label mb-1">Search Semester (full text)</label>
+                <div id="semester-search-shell" class="registration-search-shell">
+                    <input id="semester-search-input"
+                           type="text"
+                           class="form-control registration-search-input"
+                           placeholder="Search by semester name, number, decimal, or Roman..."
+                           autocomplete="off">
+                    <div class="registration-search-controls">
+                        <button id="semester-clear-btn" class="registration-icon-btn" type="button" title="Clear and close">X</button>
+                        <button id="semester-toggle-btn" class="registration-icon-btn" type="button" title="Show semesters">▼</button>
+                    </div>
+                </div>
+                <div id="semester-search-results" class="list-group registration-dropdown"></div>
+            </div>
+
+            <table class="table registration-table">
+                <thead>
+                <tr>
+                    <th>Sr. No.</th>
+                    <th>Semester ID</th>
+                    <th>Registration Date</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="registration-table-body">
+                <tr th:each="reg, it : ${semestersbean}">
+                    <td th:text="${it.count}">1</td>
+                    <td th:text="${semesterDisplayMap[reg.strid] != null ? semesterDisplayMap[reg.strid] : reg.strname}"
+                        class="js-semester-label"
+                        th:attr="
+                            data-strid=${reg.strid},
+                            data-seq=${reg.strseqno},
+                            data-name=${reg.strname},
+                            data-display=${semesterDisplayMap[reg.strid] != null ? semesterDisplayMap[reg.strid] : reg.strname}">Semester</td>
+                    <td th:text="${#temporals.format(StudentRegistrations[reg.strid]?.srgregdate, 'yyyy-MM-dd')}">Date</td>
+                    <td class="action-cell">
+                        <a th:text="${editableSemesterIds.contains(reg.strid) ? 'Edit' : 'View'}"
+                           class="btn btn-outline-primary btn-sm action-button"
+                           th:href="@{/student/registration/edit(strid=${reg.strid})}">
+                            View
+                        </a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+
+<!-- FOOTER -->
+<div th:replace="fragments/footer :: footer"></div>
+
+<script>
+    function toRoman(value) {
+        const num = Number(value);
+        if (!Number.isFinite(num)) {
+            return '';
+        }
+        const n = Math.trunc(num);
+        if (n <= 0 || n > 3999) {
+            return '';
+        }
+
+        const map = [
+            [1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'],
+            [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'],
+            [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']
+        ];
+
+        let rem = n;
+        let out = '';
+        map.forEach(function (entry) {
+            const val = entry[0];
+            const sym = entry[1];
+            while (rem >= val) {
+                out += sym;
+                rem -= val;
+            }
+        });
+        return out;
+    }
+
+    function normalizeSemesterSearchText(text) {
+        return String(text || '').toLowerCase().trim();
+    }
+
+    function tokenizeSemesterSearchText(text) {
+        return normalizeSemesterSearchText(text)
+            .split(/\s+/)
+            .filter(function (token) { return token.length > 0; });
+    }
+
+    function isNumericLikeToken(token) {
+        if (!token) {
+            return false;
+        }
+        return /^\d+(\.\d+)?$/.test(String(token).trim());
+    }
+
+    function isRomanLikeToken(token) {
+        if (!token) {
+            return false;
+        }
+        return /^[ivxlcdm]+$/i.test(String(token).trim());
+    }
+
+    function extractRomanAliases(text) {
+        const aliases = [];
+        const normalized = String(text || '').trim();
+        if (normalized.length === 0) {
+            return aliases;
+        }
+
+        const numericLike = normalized.replace(/\s+/g, '');
+        const parsed = Number(numericLike);
+        if (Number.isFinite(parsed)) {
+            const integerPart = Math.trunc(parsed);
+            if (integerPart > 0) {
+                const roman = toRoman(integerPart);
+                if (roman) {
+                    aliases.push(roman.toLowerCase());
+                }
+                aliases.push(String(integerPart));
+                aliases.push(integerPart.toFixed(1));
+            }
+        }
+        return aliases;
+    }
+
+    function readSemesterRows() {
+        const rows = Array.from(document.querySelectorAll('#registration-table-body tr'));
+        return rows.map(function (row) {
+            const semesterCell = row.querySelector('.js-semester-label');
+            const actionLink = row.querySelector('a.action-button');
+            const dateCell = row.children[2];
+
+            const strid = semesterCell ? String(semesterCell.dataset.strid || '').trim() : '';
+            const seqRaw = semesterCell ? String(semesterCell.dataset.seq || '').trim() : '';
+            const seqNum = Number(seqRaw);
+            const hasSeq = Number.isFinite(seqNum);
+            const seqInt = hasSeq ? String(Math.trunc(seqNum)) : '';
+            const seqDecimal = hasSeq ? Number(seqNum).toFixed(1) : '';
+            const romanSeq = hasSeq ? toRoman(seqNum).toLowerCase() : '';
+            const display = semesterCell ? String(semesterCell.dataset.display || semesterCell.textContent || '').trim() : '';
+            const name = semesterCell ? String(semesterCell.dataset.name || '').trim() : '';
+            const actionText = actionLink ? String(actionLink.textContent || '').trim() : '';
+            const dateText = dateCell ? String(dateCell.textContent || '').trim() : '';
+
+            const semesterNumericAlias = seqInt ? ('semester ' + seqInt) : '';
+            const semesterDecimalAlias = seqDecimal ? ('semester ' + seqDecimal) : '';
+            const semesterRomanAlias = romanSeq ? ('semester ' + romanSeq) : '';
+            const semNumericAlias = seqInt ? ('sem ' + seqInt) : '';
+            const semDecimalAlias = seqDecimal ? ('sem ' + seqDecimal) : '';
+            const semRomanAlias = romanSeq ? ('sem ' + romanSeq) : '';
+
+            const searchBlob = [
+                display.toLowerCase(),
+                name.toLowerCase(),
+                strid.toLowerCase(),
+                semesterNumericAlias,
+                semesterDecimalAlias,
+                semesterRomanAlias,
+                semNumericAlias,
+                semDecimalAlias,
+                semRomanAlias
+            ].join(' ');
+
+            const exactTokens = new Set([
+                strid.toLowerCase(),
+                seqInt.toLowerCase(),
+                seqDecimal.toLowerCase(),
+                romanSeq,
+                semesterNumericAlias,
+                semesterDecimalAlias,
+                semesterRomanAlias,
+                semNumericAlias,
+                semDecimalAlias,
+                semRomanAlias,
+                display.toLowerCase(),
+                name.toLowerCase()
+            ].filter(function (token) {
+                return token && token.length > 0;
+            }));
+
+            const searchTokens = new Set(
+                searchBlob
+                    .split(/[^a-z0-9.]+/i)
+                    .map(function (token) { return token.toLowerCase().trim(); })
+                    .filter(function (token) { return token.length > 0; })
+            );
+
+            row.dataset.search = searchBlob;
+            row.dataset.strid = strid;
+
+            return {
+                row: row,
+                strid: strid,
+                display: display,
+                name: name,
+                date: dateText,
+                action: actionText,
+                seqInt: seqInt,
+                seqDecimal: seqDecimal,
+                romanSeq: romanSeq,
+                searchBlob: searchBlob,
+                exactTokens: exactTokens,
+                searchTokens: searchTokens
+            };
+        });
+    }
+
+    function matchesSemesterEntry(entry, query) {
+        const normalized = normalizeSemesterSearchText(query);
+        if (normalized.length === 0) {
+            return true;
+        }
+
+        const aliases = extractRomanAliases(normalized);
+        const aliasExactHit = aliases.some(function (alias) {
+            return entry.exactTokens.has(String(alias || '').toLowerCase());
+        });
+        if (aliasExactHit) {
+            return true;
+        }
+
+        const queryTokens = tokenizeSemesterSearchText(normalized);
+        if (queryTokens.length === 0) {
+            return true;
+        }
+
+        const allNumeric = queryTokens.every(function (token) {
+            return isNumericLikeToken(token);
+        });
+
+        if (allNumeric) {
+            return queryTokens.every(function (token) {
+                return entry.exactTokens.has(token);
+            });
+        }
+
+        return queryTokens.every(function (token) {
+            if (entry.exactTokens.has(token)) {
+                return true;
+            }
+
+            if (entry.searchTokens.has(token)) {
+                return true;
+            }
+
+            if (isNumericLikeToken(token) || isRomanLikeToken(token)) {
+                return false;
+            }
+
+            return entry.searchBlob.includes(token);
+        });
+    }
+
+    function showOnlySemester(strid, semesterRows) {
+        const target = String(strid || '').trim();
+        semesterRows.forEach(function (entry) {
+            entry.row.style.display = (String(entry.strid || '').trim() === target) ? '' : 'none';
+        });
+    }
+
+    function filterSemesterRows(query, semesterRows) {
+        semesterRows.forEach(function (entry) {
+            entry.row.style.display = matchesSemesterEntry(entry, query) ? '' : 'none';
+        });
+    }
+
+    function renderSemesterSearchResults(query, semesterRows) {
+        const list = document.getElementById('semester-search-results');
+        if (!list) {
+            return;
+        }
+        list.innerHTML = '';
+
+        const matched = semesterRows.filter(function (entry) {
+            return matchesSemesterEntry(entry, query);
+        });
+
+        if (matched.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'list-group-item text-muted';
+            empty.textContent = 'No matching semesters found.';
+            list.appendChild(empty);
+            return;
+        }
+
+        matched.forEach(function (entry) {
+            const item = document.createElement('div');
+            item.className = 'list-group-item d-flex justify-content-between align-items-center gap-2';
+
+            const left = document.createElement('div');
+            const seqDisplay = entry.seqInt
+                ? ('Seq: ' + entry.seqInt + (entry.romanSeq ? (' / ' + entry.romanSeq.toUpperCase()) : ''))
+                : 'Seq: -';
+            left.innerHTML =
+                '<div><strong>' + entry.display + '</strong></div>' +
+                '<div class="small text-muted">' + seqDisplay + ' | Date: ' + (entry.date || '-') + '</div>';
+
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'btn btn-sm btn-outline-primary';
+            button.textContent = 'Show';
+            button.addEventListener('click', function () {
+                const searchInput = document.getElementById('semester-search-input');
+                if (searchInput) {
+                    searchInput.value = entry.display;
+                }
+                showOnlySemester(entry.strid, semesterRows);
+
+                const resultsEl = document.getElementById('semester-search-results');
+                const toggleEl = document.getElementById('semester-toggle-btn');
+                if (resultsEl) {
+                    resultsEl.classList.remove('show');
+                }
+                if (toggleEl) {
+                    toggleEl.classList.remove('registration-open');
+                    toggleEl.innerText = '▼';
+                }
+            });
+
+            item.appendChild(left);
+            item.appendChild(button);
+            list.appendChild(item);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchInput = document.getElementById('semester-search-input');
+        const searchShell = document.getElementById('semester-search-shell');
+        const toggleBtn = document.getElementById('semester-toggle-btn');
+        const clearBtn = document.getElementById('semester-clear-btn');
+        const results = document.getElementById('semester-search-results');
+
+        if (!searchInput || !searchShell || !toggleBtn || !clearBtn || !results) {
+            return;
+        }
+
+        const semesterRows = readSemesterRows();
+
+        function isOpen() {
+            return results.classList.contains('show');
+        }
+
+        function openDropdown() {
+            results.classList.add('show');
+            toggleBtn.classList.add('registration-open');
+            toggleBtn.innerText = '▲';
+            renderSemesterSearchResults(searchInput.value, semesterRows);
+        }
+
+        function closeDropdown() {
+            results.classList.remove('show');
+            toggleBtn.classList.remove('registration-open');
+            toggleBtn.innerText = '▼';
+        }
+
+        searchInput.addEventListener('input', function () {
+            openDropdown();
+            filterSemesterRows(searchInput.value, semesterRows);
+        });
+
+        searchInput.addEventListener('focus', function () {
+            openDropdown();
+            filterSemesterRows(searchInput.value, semesterRows);
+        });
+
+        searchInput.addEventListener('click', function () {
+            openDropdown();
+            filterSemesterRows(searchInput.value, semesterRows);
+        });
+
+        toggleBtn.addEventListener('click', function () {
+            if (isOpen()) {
+                closeDropdown();
+            } else {
+                openDropdown();
+                filterSemesterRows(searchInput.value, semesterRows);
+            }
+        });
+
+        clearBtn.addEventListener('click', function () {
+            searchInput.value = '';
+            filterSemesterRows('', semesterRows);
+            renderSemesterSearchResults('', semesterRows);
+            closeDropdown();
+        });
+
+        document.addEventListener('click', function (event) {
+            if (!searchShell.contains(event.target) && !results.contains(event.target)) {
+                closeDropdown();
+            }
+        });
+
+        filterSemesterRows('', semesterRows);
+        renderSemesterSearchResults('', semesterRows);
+    });
+</script>
+</body>
+</html>

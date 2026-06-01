@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Elective Registration</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- <link rel="stylesheet" th:href="@{/css/styleSrs.css}"> -->
+    <link rel="stylesheet" th:href="@{/css/navbar.css}">
+    <link rel="stylesheet" th:href="@{/css/student-registration.css}">
+    <style>
+        .elective-registration-page {
+            --reg-blue-900: #0f1f3a;
+            --reg-blue-800: #0b4c8e;
+            --reg-blue-700: #2f6fb9;
+            --reg-blue-100: #e9f2ff;
+            --reg-gray-100: #f7f8fb;
+            --reg-gray-200: #dde2ea;
+            --reg-gray-300: #cfd8e5;
+            --reg-text-900: #223a54;
+        }
+
+        .elective-registration-page .registration-card {
+            background: var(--reg-gray-100);
+            border-color: var(--reg-gray-200);
+        }
+
+        .elective-registration-page h2 {
+            color: var(--reg-blue-900);
+            font-weight: 700;
+        }
+
+        .elective-registration-page .form-control,
+        .elective-registration-page .form-select {
+            border-color: var(--reg-gray-300);
+            color: var(--reg-text-900);
+        }
+
+        .elective-registration-page .form-control:focus,
+        .elective-registration-page .form-select:focus {
+            border-color: var(--reg-blue-700);
+            box-shadow: 0 0 0 0.18rem rgba(47, 111, 185, 0.18);
+        }
+
+        .course-selection-container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .available-courses-panel {
+            border: 2px solid var(--reg-gray-300);
+            border-radius: 8px;
+            padding: 20px;
+            background-color: var(--reg-gray-100);
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .available-courses-panel h5 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: var(--reg-text-900);
+            font-weight: 600;
+        }
+
+        .available-slot-section {
+            margin-bottom: 20px;
+        }
+
+        .available-slot-header {
+            background-color: var(--reg-blue-700);
+            color: white;
+            padding: 10px 12px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 8px;
+        }
+
+        .available-slot-section .course-item {
+            margin-left: 8px;
+            margin-bottom: 8px;
+        }
+
+        .course-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            border: 1px solid var(--reg-gray-300);
+            border-radius: 6px;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .course-item:hover {
+            background-color: var(--reg-blue-100);
+            border-color: var(--reg-blue-700);
+        }
+
+        .course-item.selected {
+            background-color: var(--reg-blue-100);
+            border-color: #76a8e0;
+            color: var(--reg-text-900);
+            font-weight: 500;
+        }
+
+        .course-item-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .course-item-details {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+
+        .selected-courses-panel {
+            border: 2px solid var(--reg-gray-300);
+            border-radius: 8px;
+            padding: 20px;
+            background-color: var(--reg-gray-100);
+        }
+
+        .slot-section {
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: white;
+            border: 1px solid var(--reg-gray-300);
+            border-radius: 6px;
+        }
+
+        .slot-section h6 {
+            color: var(--reg-blue-700);
+            font-weight: 600;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--reg-blue-100);
+        }
+
+        .selected-course-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            margin-bottom: 8px;
+            background-color: var(--reg-blue-100);
+            border: 1px solid #76a8e0;
+            border-radius: 4px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .course-priority-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background-color: var(--reg-blue-700);
+            color: white;
+            border-radius: 50%;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .selected-course-item .course-details {
+            flex: 1;
+        }
+
+        .selected-course-item .course-code {
+            font-weight: 600;
+            color: var(--reg-text-900);
+        }
+
+        .selected-course-item .course-name {
+            font-size: 0.9rem;
+            color: var(--reg-text-900);
+        }
+
+        .course-controls {
+            display: flex;
+            gap: 5px;
+        }
+
+        .course-controls button {
+            padding: 4px 8px;
+            font-size: 0.8rem;
+            min-width: 35px;
+            background-color: var(--reg-blue-700);
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .course-controls button:hover {
+            background-color: #2b64a5;
+        }
+
+        .course-controls button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .remove-btn {
+            background-color: #dc3545 !important;
+        }
+
+        .remove-btn:hover {
+            background-color: #c82333 !important;
+        }
+
+        .empty-slot-message {
+            color: #6c757d;
+            font-style: italic;
+            padding: 10px;
+        }
+
+        .slot-priority-section {
+            background-color: var(--reg-blue-100);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .slot-priority-section h5 {
+            margin-bottom: 15px;
+            color: var(--reg-blue-800);
+        }
+
+        .slot-priority-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .slot-priority-panel {
+            background-color: var(--reg-gray-100);
+            border: 1px solid var(--reg-gray-300);
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 220px;
+        }
+
+        .slot-priority-panel h6 {
+            font-weight: 600;
+            color: var(--reg-blue-800);
+            margin-bottom: 12px;
+        }
+
+        .slot-priority-item-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            background-color: white;
+            border: 1px solid var(--reg-gray-300);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+
+        .slot-priority-item-card:hover {
+            background-color: var(--reg-blue-100);
+            border-color: var(--reg-blue-700);
+        }
+
+        .slot-priority-item-details {
+            font-weight: 600;
+            color: var(--reg-blue-800);
+        }
+
+        .slot-priority-controls {
+            display: flex;
+            gap: 5px;
+        }
+
+        .slot-priority-controls button {
+            padding: 4px 8px;
+            font-size: 0.8rem;
+            min-width: 35px;
+            background-color: var(--reg-blue-700);
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .slot-priority-controls button:hover {
+            background-color: #2b64a5;
+        }
+
+        .slot-priority-controls button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .slot-priority-remove {
+            background-color: #dc3545 !important;
+        }
+
+        .slot-priority-remove:hover {
+            background-color: #c82333 !important;
+        }
+
+        .slot-priority-empty {
+            color: #5a6677;
+            font-style: italic;
+            padding: 10px;
+        }
+
+        @media (max-width: 1200px) {
+            .course-selection-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .slot-priority-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .elective-registration-page .action-link-outline {
+            color: #0b4c8e;
+            border: 1px solid #b7cbe3;
+            background: #f5f9fe;
+            font-weight: 600;
+        }
+
+        .elective-registration-page .action-link-outline:hover {
+            color: #ffffff;
+            border-color: #2f6fb9;
+            background: #2f6fb9;
+        }
+
+        .elective-registration-page .action-danger-outline {
+            color: #d16c78;
+            border: 1px solid #efc2c8;
+            background: #fff7f8;
+            font-weight: 600;
+        }
+
+        .elective-registration-page .action-danger-outline:hover {
+            color: #ffffff;
+            border-color: #c25564;
+            background: #c25564;
+        }
+
+        .elective-registration-page .requirements-card {
+            border-color: var(--reg-gray-300);
+            background: var(--reg-gray-100);
+        }
+
+        .elective-registration-page .requirements-card .card-header {
+            background: var(--reg-blue-700);
+            color: #ffffff;
+            border-bottom: 1px solid var(--reg-gray-300);
+            font-weight: 600;
+        }
+
+        .elective-registration-page .requirements-card .card-body {
+            background: var(--reg-gray-100);
+        }
+    </style>
+</head>
+
+<body class="registration-page elective-registration-page">
+<!-- HEADER -->
+<div th:replace="fragments/header :: header"></div>
+
+<!-- NAVBAR -->
+<div th:replace="fragments/navbar :: navbar"></div>
+
+<main class="registration-layout">
+    <div class="container-lg registration-card my-4">
+        <h2 class="mb-4">Course Slot Preferences</h2>
+
+        <form id="registrationForm" th:action="@{/student/submitPreference}" method="post">
+        
+        <!-- COURSE SELECTION SECTION -->
+        <div class="course-selection-container">
+            <!-- Left Panel: Available Courses -->
+            <div class="available-courses-panel">
+                <h5>Available Courses</h5>
+                <div id="availableCoursesContainer">
+                    <!-- This will be populated by JavaScript with all courses from all slots -->
+                </div>
+            </div>
+
+            <!-- Right Panel: Selected by Slot -->
+            <div class="selected-courses-panel">
+                <div id="selectedCoursesContainer">
+                    <!-- This will be populated by JavaScript with slots and selected courses -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Hidden form fields for backend compatibility -->
+        <div id="hiddenFieldsContainer" style="display: none;"></div>
+
+        <!-- SLOT PRIORITY ASSIGNMENT SECTION (moved to end) -->
+        <div class="slot-priority-section">
+            <h5>Assign Priority to Each Slot (Relative to Others)</h5>
+            <div class="slot-priority-layout">
+                <div class="slot-priority-panel">
+                    <h6>Slots to Assign Priority</h6>
+                    <div id="slotPriorityAvailable"></div>
+                </div>
+                <div class="slot-priority-panel">
+                    <h6>Slot Priority Order</h6>
+                    <div id="slotPrioritySelected"></div>
+                </div>
+            </div>
+            <div id="slotPriorityHiddenContainer" style="display: none;"></div>
+        </div>
+
+        <!-- ACADEMIC REQUIREMENTS SECTION -->
+        <div class="card mb-5 requirements-card">
+            <div class="card-header">How many courses of each type do you require?</div>
+            <div class="card-body">
+                <div class="row">
+                    <div th:each="type : ${electiveTypes}" class="col-md-3 mb-3">
+                        <label class="form-label" th:text="${type}">ICTE</label>
+                        <input type="number" th:name="'count_' + ${type}" class="form-control" min="0" value="0">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+          <button type="button" onclick="validateAndSubmit()" class="btn btn-success btn-lg w-100 mb-3">Submit All Preferences</button>
+        <a th:if="${hasSubmittedPreferences}"
+           th:href="@{/student/electiveRegistration/view}"
+                     class="btn action-link-outline btn-lg w-100 mb-3">View Preferences Submitted</a>
+        <button th:unless="${hasSubmittedPreferences}"
+            type="button"
+                        class="btn action-link-outline btn-lg w-100 mb-3"
+            disabled>View Preferences Submitted</button>
+                      <a th:href="@{'/student/registration/edit?strid=' + ${semesterId}}" class="btn action-danger-outline btn-lg w-100 mb-5">Back to Core Registration</a>
+                    </form>
+                </div>
+            </main>
+
+<script th:inline="javascript">
+    // Data passed from backend
+    const slotMap = [[${slotMap}]];
+
+    // Track selected courses: { slotId: [courseId1, courseId2, ...] }
+    const selectedCourses = {};
+    
+    // All courses data for mapping
+    const allCoursesData = {};
+
+    // Ordered slot priority list
+    const slotPriorityOrder = [];
+
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeData();
+        renderAvailableCourses();
+        renderSelectedCourseSections();
+        renderSlotPriorityUI();
+        attachEventListeners();
+    });
+
+    function initializeData() {
+        // Initialize selectedCourses and build allCoursesData
+        Object.entries(slotMap).forEach(([slotId, courses]) => {
+            selectedCourses[slotId] = [];
+            courses.forEach(course => {
+                const courseId = String(course[0]); // Ensure courseId is always a string
+                allCoursesData[courseId] = {
+                    id: courseId,
+                    code: course[3],           // crscode (alphanumeric like "MATH101", "CS301")
+                    name: course[2],           // crsname
+                    tcrcrsid: course[1],       // raw course id
+                    ltpc: course[4],           // L-T-P-C
+                    faculty: course[5],        // tcrfacultyid
+                    type: course[6],           // tcaelectivetype
+                    slot: course[7],           // tcrslot
+                    slotId: slotId
+                };
+            });
+        });
+    }
+
+    function renderAvailableCourses() {
+        const container = document.getElementById('availableCoursesContainer');
+        container.innerHTML = '';
+
+        // Group courses by slot
+        Object.entries(slotMap).forEach(([slotId, coursesInSlot]) => {
+            // Create slot section header
+            const slotSection = document.createElement('div');
+            slotSection.className = 'available-slot-section';
+            slotSection.id = 'available-slot-' + slotId;
+
+            const slotHeader = document.createElement('div');
+            slotHeader.className = 'available-slot-header';
+            slotHeader.textContent = 'Slot ' + slotId;
+            slotSection.appendChild(slotHeader);
+
+            // Create course items for this slot
+            coursesInSlot.forEach(course => {
+                const courseId = String(course[0]); // Ensure courseId is always a string
+                const courseDiv = document.createElement('div');
+                courseDiv.className = 'course-item';
+                courseDiv.id = 'course-' + courseId;
+                courseDiv.dataset.courseId = courseId;
+                courseDiv.innerHTML = `
+                    <div class="course-item-title">${course[3] || ''} - ${course[2] || ''}</div>
+                    <div class="course-item-details">
+                        ${course[4] || ''} | ${course[6] || ''}
+                    </div>
+                `;
+                courseDiv.addEventListener('click', function() {
+                    toggleCourseSelection(courseId);
+                });
+                slotSection.appendChild(courseDiv);
+            });
+
+            container.appendChild(slotSection);
+        });
+    }
+
+    function toggleCourseSelection(courseId) {
+        courseId = String(courseId); // Ensure courseId is always a string
+        const course = allCoursesData[courseId];
+        const slotId = course.slotId;
+        const courseDiv = document.getElementById('course-' + courseId);
+
+        const index = selectedCourses[slotId].indexOf(courseId);
+        if (index > -1) {
+            // Remove from selection
+            selectedCourses[slotId].splice(index, 1);
+            courseDiv.classList.remove('selected');
+        } else {
+            // Add to selection
+            selectedCourses[slotId].push(courseId);
+            courseDiv.classList.add('selected');
+        }
+
+        renderSelectedCourseSections();
+        updateHiddenFields();
+    }
+
+    function renderSelectedCourseSections() {
+        const container = document.getElementById('selectedCoursesContainer');
+        container.innerHTML = '';
+
+        Object.entries(slotMap).forEach(([slotId, _]) => {
+            const slotDiv = document.createElement('div');
+            slotDiv.className = 'slot-section';
+            slotDiv.id = 'slot-section-' + slotId;
+
+            const slotTitle = document.createElement('h6');
+            slotTitle.textContent = 'Slot ' + slotId;
+            slotDiv.appendChild(slotTitle);
+
+            const coursesList = selectedCourses[slotId];
+            if (coursesList.length === 0) {
+                const emptyMsg = document.createElement('div');
+                emptyMsg.className = 'empty-slot-message';
+                emptyMsg.textContent = 'No courses selected yet';
+                slotDiv.appendChild(emptyMsg);
+            } else {
+                coursesList.forEach((courseId, index) => {
+                    courseId = String(courseId); // Ensure courseId is always a string
+                    const course = allCoursesData[courseId];
+                    if (!course) {
+                        console.error('Course data not found for:', courseId);
+                        return;
+                    }
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'selected-course-item';
+                    itemDiv.dataset.courseId = courseId;
+
+                    itemDiv.innerHTML = `
+                        <div class="course-priority-badge">${index + 1}</div>
+                        <div class="course-details">
+                            <div class="course-code">${course.code} - ${course.name}</div>
+                        </div>
+                        <div class="course-controls">
+                            <button type="button" class="up-btn" ${index === 0 ? 'disabled' : ''} onclick="moveCourseUp(event, '${slotId}', ${index}); return false;">↑</button>
+                            <button type="button" class="down-btn" ${index === coursesList.length - 1 ? 'disabled' : ''} onclick="moveCourseDown(event, '${slotId}', ${index}); return false;">↓</button>
+                            <button type="button" class="remove-btn" onclick="removeCourse(event, '${courseId}'); return false;">✕</button>
+                        </div>
+                    `;
+                    slotDiv.appendChild(itemDiv);
+                });
+            }
+
+            container.appendChild(slotDiv);
+        });
+
+        renderSlotPriorityUI();
+    }
+
+    function moveCourseUp(event, slotId, index) {
+        event.preventDefault();
+        if (index > 0) {
+            const temp = selectedCourses[slotId][index];
+            selectedCourses[slotId][index] = selectedCourses[slotId][index - 1];
+            selectedCourses[slotId][index - 1] = temp;
+            renderSelectedCourseSections();
+            updateHiddenFields();
+        }
+    }
+
+    function moveCourseDown(event, slotId, index) {
+        event.preventDefault();
+        if (index < selectedCourses[slotId].length - 1) {
+            const temp = selectedCourses[slotId][index];
+            selectedCourses[slotId][index] = selectedCourses[slotId][index + 1];
+            selectedCourses[slotId][index + 1] = temp;
+            renderSelectedCourseSections();
+            updateHiddenFields();
+        }
+    }
+
+    function removeCourse(event, courseId) {
+        event.preventDefault();
+        courseId = String(courseId); // Ensure courseId is always a string
+        const course = allCoursesData[courseId];
+        if (!course) {
+            console.error('Course not found:', courseId);
+            return;
+        }
+        const slotId = course.slotId;
+        const index = selectedCourses[slotId].indexOf(courseId);
+        if (index > -1) {
+            selectedCourses[slotId].splice(index, 1);
+        }
+        const courseElement = document.getElementById('course-' + courseId);
+        if (courseElement) {
+            courseElement.classList.remove('selected');
+        }
+        renderSelectedCourseSections();
+        updateHiddenFields();
+    }
+
+    function updateHiddenFields() {
+        const container = document.getElementById('hiddenFieldsContainer');
+        container.innerHTML = '';
+
+        Object.entries(selectedCourses).forEach(([slotId, courseIds]) => {
+            courseIds.forEach((courseId, priority) => {
+                courseId = String(courseId); // Ensure courseId is always a string
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'pref_' + slotId + '_' + courseId;
+                input.value = priority + 1; // Priority is 1-indexed
+                container.appendChild(input);
+            });
+        });
+    }
+
+    function renderSlotPriorityUI() {
+        const availableContainer = document.getElementById('slotPriorityAvailable');
+        const selectedContainer = document.getElementById('slotPrioritySelected');
+
+        if (!availableContainer || !selectedContainer) {
+            return;
+        }
+
+        availableContainer.innerHTML = '';
+        selectedContainer.innerHTML = '';
+
+        const eligibleSlots = Object.keys(slotMap).filter(slotId => isSlotEligible(slotId));
+
+        // Remove ineligible slots from the priority order
+        for (let i = slotPriorityOrder.length - 1; i >= 0; i--) {
+            if (!eligibleSlots.includes(slotPriorityOrder[i])) {
+                slotPriorityOrder.splice(i, 1);
+            }
+        }
+
+        if (eligibleSlots.length === 0) {
+            const emptyMsg = document.createElement('div');
+            emptyMsg.className = 'slot-priority-empty';
+            emptyMsg.textContent = 'Complete course preferences for a slot to assign its priority.';
+            availableContainer.appendChild(emptyMsg);
+        } else {
+            eligibleSlots.forEach(slotId => {
+                if (slotPriorityOrder.includes(slotId)) {
+                    return;
+                }
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'slot-priority-item-card';
+                itemDiv.dataset.slotId = slotId;
+                itemDiv.innerHTML = `
+                    <div class="slot-priority-item-details">Slot ${slotId}</div>
+                    <div class="slot-priority-controls">
+                        <button type="button" onclick="assignSlotPriority('${slotId}'); return false;">→</button>
+                    </div>
+                `;
+                itemDiv.addEventListener('click', function(e) {
+                    if (e.target.tagName.toLowerCase() !== 'button') {
+                        assignSlotPriority(slotId);
+                    }
+                });
+                availableContainer.appendChild(itemDiv);
+            });
+        }
+
+        if (slotPriorityOrder.length === 0) {
+            const emptyMsg = document.createElement('div');
+            emptyMsg.className = 'slot-priority-empty';
+            emptyMsg.textContent = 'No slots prioritized yet.';
+            selectedContainer.appendChild(emptyMsg);
+        } else {
+            slotPriorityOrder.forEach((slotId, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'selected-course-item';
+                itemDiv.dataset.slotId = slotId;
+
+                itemDiv.innerHTML = `
+                    <div class="course-priority-badge">${index + 1}</div>
+                    <div class="course-details">
+                        <div class="course-code">Slot ${slotId}</div>
+                    </div>
+                    <div class="slot-priority-controls">
+                        <button type="button" ${index === 0 ? 'disabled' : ''} onclick="moveSlotPriorityUp(event, ${index}); return false;">↑</button>
+                        <button type="button" ${index === slotPriorityOrder.length - 1 ? 'disabled' : ''} onclick="moveSlotPriorityDown(event, ${index}); return false;">↓</button>
+                        <button type="button" class="slot-priority-remove" onclick="removeSlotPriority(event, '${slotId}'); return false;">✕</button>
+                    </div>
+                `;
+
+                selectedContainer.appendChild(itemDiv);
+            });
+        }
+
+        syncSlotPrioritySelects();
+    }
+
+    function isSlotEligible(slotId) {
+        const courses = slotMap[slotId] || [];
+        const selected = selectedCourses[slotId] || [];
+        return courses.length > 0 && selected.length === courses.length;
+    }
+
+    function assignSlotPriority(slotId) {
+        if (!slotPriorityOrder.includes(slotId)) {
+            slotPriorityOrder.push(slotId);
+            renderSlotPriorityUI();
+        }
+    }
+
+    function removeSlotPriority(event, slotId) {
+        if (event) {
+            event.preventDefault();
+        }
+        const index = slotPriorityOrder.indexOf(slotId);
+        if (index > -1) {
+            slotPriorityOrder.splice(index, 1);
+            renderSlotPriorityUI();
+        }
+    }
+
+    function moveSlotPriorityUp(event, index) {
+        event.preventDefault();
+        if (index > 0) {
+            const temp = slotPriorityOrder[index - 1];
+            slotPriorityOrder[index - 1] = slotPriorityOrder[index];
+            slotPriorityOrder[index] = temp;
+            renderSlotPriorityUI();
+        }
+    }
+
+    function moveSlotPriorityDown(event, index) {
+        event.preventDefault();
+        if (index < slotPriorityOrder.length - 1) {
+            const temp = slotPriorityOrder[index + 1];
+            slotPriorityOrder[index + 1] = slotPriorityOrder[index];
+            slotPriorityOrder[index] = temp;
+            renderSlotPriorityUI();
+        }
+    }
+
+    function syncSlotPrioritySelects() {
+        const container = document.getElementById('slotPriorityHiddenContainer');
+        if (!container) {
+            return;
+        }
+        container.innerHTML = '';
+
+        const numSlots = Object.keys(slotMap).length;
+
+        Object.keys(slotMap).forEach(slotId => {
+            const select = document.createElement('select');
+            select.id = 'slotPriority_' + slotId;
+            select.name = 'slotPriority_' + slotId;
+            select.className = 'slot-priority-select';
+
+            const emptyOption = document.createElement('option');
+            emptyOption.value = '';
+            emptyOption.textContent = '-- Select Priority --';
+            select.appendChild(emptyOption);
+
+            for (let i = 1; i <= numSlots; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                select.appendChild(option);
+            }
+
+            const orderIndex = slotPriorityOrder.indexOf(slotId);
+            if (orderIndex > -1) {
+                select.value = String(orderIndex + 1);
+            }
+
+            container.appendChild(select);
+        });
+    }
+
+    function attachEventListeners() {
+        // Event listeners already attached inline in rendered elements
+    }
+
+    function validateAndSubmit() {
+        let isValid = true;
+        let hasAnySelection = false;
+
+        syncSlotPrioritySelects();
+
+        // Check if at least one course is selected
+        Object.entries(selectedCourses).forEach(([slotId, courseIds]) => {
+            if (courseIds.length > 0) {
+                hasAnySelection = true;
+                // Check 2: Priority must be selected for this slot
+                const priorityEl = document.getElementById('slotPriority_' + slotId);
+                if (!priorityEl.value) {
+                    alert(`Please assign a unique priority rank for Slot ${slotId}.`);
+                    isValid = false;
+                }
+            }
+        });
+
+        if (!hasAnySelection) {
+            alert('Please select at least one course.');
+            isValid = false;
+        }
+
+        // Check 3: Validate slot priorities uniqueness
+        if (isValid) {
+            const priorityValues = [];
+            Object.keys(slotMap).forEach(slotId => {
+                const priorityEl = document.getElementById('slotPriority_' + slotId);
+                if (priorityEl.value) {
+                    if (priorityValues.includes(priorityEl.value)) {
+                        alert(`Priority ${priorityEl.value} is assigned to more than one slot!`);
+                        isValid = false;
+                    }
+                    priorityValues.push(priorityEl.value);
+                }
+            });
+        }
+
+        if (isValid) {
+            document.getElementById('registrationForm').submit();
+        }
+    }
+</script>
+
+
+<!-- FOOTER -->
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

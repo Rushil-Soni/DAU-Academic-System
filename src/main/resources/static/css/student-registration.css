@@ -1,0 +1,241 @@
+/* Page-specific styling for /student/registration */
+.registration-page {
+    background: #e9ebf0;
+    background-image: none;
+    background-attachment: scroll;
+    background-repeat: no-repeat;
+    margin: 0;
+    min-height: 100vh;
+}
+
+.registration-page::after {
+    display: none;
+    background-image: none;
+}
+
+.registration-page .sidemenu {
+    display: none;
+}
+
+.registration-page .content {
+    padding: 0;
+}
+
+.registration-page .header {
+    border-bottom: 1px solid #d7dde7;
+}
+
+.registration-page .navbar {
+    margin-top: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.registration-layout {
+    padding: 34px 26px 24px;
+}
+
+.registration-card {
+    background: #f7f8fb;
+    border: 1px solid #dde2ea;
+    border-radius: 12px;
+    padding: 22px 20px 20px;
+}
+
+.registration-title {
+    text-align: center;
+    color: #0f1f3a;
+    margin: 8px 0 18px;
+    font-size: 46px;
+    line-height: 1.1;
+    font-weight: 700;
+}
+
+.registration-table-wrap {
+    overflow-x: auto;
+}
+
+.registration-search-panel {
+    max-width: 720px;
+}
+
+.registration-search-shell {
+    position: relative;
+}
+
+.registration-search-controls {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 6px;
+    z-index: 3;
+}
+
+.registration-search-input {
+    padding-right: 88px;
+}
+
+.registration-icon-btn {
+    border: 1px solid #bfd0e4;
+    background: #f7fbff;
+    color: #3a5f83;
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    font-size: 14px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.registration-icon-btn:hover {
+    color: #ffffff;
+    border-color: #3a5f83;
+    background: #3a5f83;
+}
+
+.registration-icon-btn.registration-open {
+    color: #ffffff;
+    border-color: #2f6fb9;
+    background: #2f6fb9;
+}
+
+.registration-dropdown {
+    display: none;
+    margin-top: 8px;
+    border: 1px solid #cfd8e5;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #ffffff;
+    box-shadow: 0 6px 18px rgba(19, 53, 92, 0.08);
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.registration-dropdown.show {
+    display: block;
+}
+
+.registration-dropdown .list-group-item {
+    border-color: #cfd8e5;
+    color: #223a54;
+    font-size: 14px;
+}
+
+.registration-dropdown .btn-outline-primary {
+    color: #0b4c8e;
+    border-color: #b7cbe3;
+    background: #f5f9fe;
+}
+
+.registration-dropdown .btn-outline-primary:hover {
+    color: #fff;
+    border-color: #2f6fb9;
+    background: #2f6fb9;
+}
+
+.registration-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+    background: #ffffff;
+}
+
+.registration-table th,
+.registration-table td {
+    border: 1px solid #d8dde6;
+    padding: 10px 8px;
+    font-size: 18px;
+    color: #222e3f;
+    vertical-align: middle;
+}
+
+.registration-table th {
+    text-align: center;
+    background: #f2f4f7;
+    color: #5a6677;
+    font-weight: 700;
+}
+
+.registration-table tbody tr:nth-child(odd) {
+    background: #ececee;
+}
+
+.registration-table tbody tr:nth-child(even) {
+    background: #f9f9fb;
+}
+
+.registration-table td:nth-child(1) {
+    width: 17%;
+}
+
+.registration-table td:nth-child(2) {
+    width: 29%;
+}
+
+.registration-table td:nth-child(3) {
+    width: 37%;
+}
+
+.registration-table td:nth-child(4) {
+    width: 17%;
+}
+
+.action-cell {
+    text-align: left;
+}
+
+.action-button.btn {
+    font-size: 17px;
+    line-height: 1.1;
+    padding: 4px 11px;
+    border-radius: 4px;
+    border-color: #76a8e0;
+    color: #4a87cf;
+    background: #e9f2ff;
+}
+
+.action-button.btn:hover,
+.action-button.btn:focus {
+    background: #d9eaff;
+    color: #2f6fb9;
+    border-color: #5b95d7;
+}
+
+.empty-state {
+    text-align: center;
+    color: #c0392b;
+    font-size: 16px;
+    margin: 12px 0 4px;
+}
+
+@media (max-width: 992px) {
+    .registration-layout {
+        padding: 20px 12px 16px;
+    }
+
+    .registration-card {
+        padding: 14px 10px;
+    }
+
+    .registration-title {
+        font-size: 34px;
+        margin-top: 4px;
+    }
+
+    .registration-table th,
+    .registration-table td {
+        font-size: 15px;
+        padding: 8px 6px;
+    }
+
+    .action-button.btn {
+        font-size: 14px;
+        padding: 4px 9px;
+    }
+}
