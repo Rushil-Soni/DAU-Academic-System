@@ -3,9 +3,10 @@ package com.ecampus.service;
 import java.util.List;
 import java.util.Map;
 
+import com.ecampus.dto.GradeChangeStatusDTO;
+import com.ecampus.dto.StudentGradeDTO;
 import com.ecampus.model.Grade;
-import com.ecampus.model.GradeChangeStatusDTO;
-import com.ecampus.model.StudentGradeDTO;
+import com.ecampus.dto.GradeUploadValidationResult;
 
 public interface GradeService {
 
@@ -35,4 +36,10 @@ public interface GradeService {
     boolean processRegistrarAction(Long gmdid, Long registrarId, String action);
 
     boolean checkIfGradesExist(Long crsid, Long trmid, Long examTypeId);
+
+    List<StudentGradeDTO> getRegisteredStudentsForCourse(Long tcrid);
+
+    GradeUploadValidationResult validateCsvGrades(List<StudentGradeDTO> csvGrades, Long tcrid);
+
+    boolean gradesAlreadyUploaded(Long tcrid, Long examTypeId);
 }

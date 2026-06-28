@@ -1,7 +1,9 @@
 package com.ecampus.controller;
 
 import com.ecampus.service.GlobalConstantsService;
-import com.ecampus.session.SessionVars;
+import com.ecampus.model.Users;
+import com.ecampus.session.SessionConstants;
+import jakarta.servlet.http.HttpSession;
 
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -10,29 +12,28 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 @ControllerAdvice
 public class GlobalUserAdvice {
 
-    private final SessionVars sessionVars;
     private final GlobalConstantsService globalConstantsService;
 
-    public GlobalUserAdvice(SessionVars sessionVars,
-                            GlobalConstantsService globalConstantsService) {
-        this.sessionVars = sessionVars;
+    public GlobalUserAdvice(GlobalConstantsService globalConstantsService) {
         this.globalConstantsService = globalConstantsService;
     }
 
     @ModelAttribute
-    public void addGlobalAttributes(Model model) {
+    public void addGlobalAttributes(Model model,HttpSession session) {
 
-        model.addAttribute("sessionVars", sessionVars);
+        Users currentUser = session == null
+                ? null
+                : (Users) session.getAttribute(SessionConstants.CURRENT_USER);
 
+        model.addAttribute("currentUser", currentUser);
+        model.addAttribute("sessionVars", currentUser);
         model.addAttribute(
                 "currentAcademicYearName",
-                getDisplayValue(globalConstantsService.getCurrentAcademicYearName())
-        );
+                getDisplayValue(globalConstantsService.getCurrentAcademicYearName()));
 
         model.addAttribute(
                 "currentTermName",
-                getDisplayValue(globalConstantsService.getCurrentTermName())
-        );
+                getDisplayValue(globalConstantsService.getCurrentTermName()));
     }
 
     private String getDisplayValue(String value) {
@@ -42,43 +43,3 @@ public class GlobalUserAdvice {
         return value;
     }
 }
-
-
-
-
-
-// package com.ecampus.controller;
-
-// import com.ecampus.model.Users;
-// import com.ecampus.repository.UserRepository;
-// import org.springframework.beans.factory.annotation.Autowired;
-// import org.springframework.security.core.Authentication;
-// import org.springframework.security.core.context.SecurityContextHolder;
-// import org.springframework.ui.Model;
-// import org.springframework.web.bind.annotation.ControllerAdvice;
-// import org.springframework.web.bind.annotation.ModelAttribute;
-
-// import java.util.Optional;
-
-// @ControllerAdvice
-// public class GlobalUserAdvice {
-
-//     @Autowired
-//     private UserRepository userRepository;
-
-//     /**
-//      * This method runs before every controller request. 
-//      * It puts the full 'Users' object into the model as 'currentUser'.
-//      */
-//     @ModelAttribute
-//     public void addUserToModel(Model model) {
-//         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        
-//         if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal().toString())) {
-//             String username = auth.getName();
-//             Optional<Users> userOpt = userRepository.findWithName(username);
-            
-//             userOpt.ifPresent(user -> model.addAttribute("currentUser", user));
-//         }
-//     }
-// }

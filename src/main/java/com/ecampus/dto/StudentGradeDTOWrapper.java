@@ -1,4 +1,4 @@
-package com.ecampus.model;
+package com.ecampus.dto;
 
 import java.util.ArrayList;
 import java.util.List;

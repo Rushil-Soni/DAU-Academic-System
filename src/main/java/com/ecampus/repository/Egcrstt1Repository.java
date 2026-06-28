@@ -17,5 +17,16 @@ public interface Egcrstt1Repository extends JpaRepository<Egcrstt1, Egcrstt1Id> 
 
     @Query(value = "SELECT COUNT(*) FROM ec2.EGCRSTT1 eg WHERE eg.STUD_ID=:pStdId AND eg.TCRID=:tempTermCourseId AND eg.ROW_ST>0 AND eg.OBTGR_ID = 10", nativeQuery = true)
     Long countPassGradesForAudit(@Param("pStdId") Long pStdId, @Param("tempTermCourseId") Long tempTermCourseId);
-    
+
+    @Query(value = """
+            SELECT COUNT(*)
+            FROM ec2.egcrstt1 e
+            WHERE e.tcrid = :tcrid
+              AND e.examtype_id = :examTypeId
+              AND e.row_st > '0'
+              AND e.obtgr_id IS NOT NULL
+            """, nativeQuery = true)
+    Long countUploadedGrades(@Param("tcrid") Long tcrid,
+            @Param("examTypeId") Long examTypeId);
+
 }

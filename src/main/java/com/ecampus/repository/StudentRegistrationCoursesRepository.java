@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.ecampus.dto.RegisteredStudentGradeProjection;
 import com.ecampus.model.StudentRegistrationCourses;
 
 @Repository
@@ -141,5 +142,29 @@ public interface StudentRegistrationCoursesRepository extends JpaRepository<Stud
                 "    SELECT srgid FROM ec2.studentregistrations WHERE srgstdid = g.stud_id" +
                 ")", nativeQuery = true)
     List<Object[]> getCpiCreditsEarned(@Param("stdId") Long stdId, @Param("eligibleIds") List<Long> eligibleIds);
+
+    @Query(value = """
+        SELECT DISTINCT
+            s.stdinstid AS studentId,
+            TRIM(CONCAT(
+                COALESCE(s.stdfirstname, ''), ' ',
+                COALESCE(s.stdmiddlename, ''), ' ',
+                COALESCE(s.stdlastname, '')
+            )) AS studentName,
+            s.stdemail AS studentEmail,
+            'NULL' AS grade
+        FROM ec2.studentregistrationcourses src
+        JOIN ec2.studentregistrations sr
+          ON src.srcsrgid = sr.srgid
+        JOIN ec2.students s
+          ON sr.srgstdid = s.stdid
+        WHERE src.srctcrid = :tcrid
+          AND src.srcrowstate > 0
+          AND src.srcstatus = 'ACTIVE'
+          AND sr.srgrowstate > 0
+          AND s.stdrowstate > 0
+        ORDER BY s.stdinstid
+        """, nativeQuery = true)
+List<RegisteredStudentGradeProjection> findRegisteredStudentsForGradeUpload(@Param("tcrid") Long tcrid);
 
 }

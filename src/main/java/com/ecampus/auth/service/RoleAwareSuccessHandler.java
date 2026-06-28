@@ -2,7 +2,8 @@ package com.ecampus.auth.service;
 
 import com.ecampus.model.Users;
 import com.ecampus.repository.UserRepository;
-import com.ecampus.session.SessionVars;
+import com.ecampus.session.SessionConstants;
+import jakarta.servlet.http.HttpSession;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,16 +20,12 @@ public class RoleAwareSuccessHandler extends SavedRequestAwareAuthenticationSucc
 
     private final Map<String, String> defaultSuccessUrls;
     private final UserRepository userRepository;
-    private final SessionVars sessionVars;
 
     public RoleAwareSuccessHandler(
             Map<String, String> defaultSuccessUrls,
-            UserRepository userRepository,
-            SessionVars sessionVars) {
-
+            UserRepository userRepository) {
         this.defaultSuccessUrls = defaultSuccessUrls;
         this.userRepository = userRepository;
-        this.sessionVars = sessionVars;
     }
 
     @Override
@@ -37,7 +34,7 @@ public class RoleAwareSuccessHandler extends SavedRequestAwareAuthenticationSucc
             HttpServletResponse response,
             Authentication authentication) throws IOException, ServletException {
 
-        loadSessionUser(authentication);
+        loadSessionUser(request, authentication);
 
         super.onAuthenticationSuccess(request, response, authentication);
     }
@@ -59,28 +56,28 @@ public class RoleAwareSuccessHandler extends SavedRequestAwareAuthenticationSucc
         return "/login?error";
     }
 
-    private void loadSessionUser(Authentication authentication) {
+    private void loadSessionUser(HttpServletRequest request, Authentication authentication) {
+
+        HttpSession session = request.getSession(true);
 
         if (authentication == null ||
                 authentication.getName() == null ||
                 authentication.getName().isBlank()) {
 
-            sessionVars.clear();
+            session.removeAttribute(SessionConstants.CURRENT_USER);
             return;
         }
 
-        String loginValue = authentication.getName();
-
-        Users user = userRepository.findWithName(loginValue).orElse(null);
+        Users user = userRepository.findByUname(authentication.getName()).orElse(null);
 
         if (user == null ||
                 user.getUnivId() == null ||
                 user.getUnivId().isBlank()) {
 
-            sessionVars.clear();
+            session.removeAttribute(SessionConstants.CURRENT_USER);
             return;
         }
 
-        sessionVars.loadFrom(user);
+        session.setAttribute(SessionConstants.CURRENT_USER, user);
     }
 }

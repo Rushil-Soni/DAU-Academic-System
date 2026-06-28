@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import com.ecampus.model.StudentGradeDTO;
+import com.ecampus.dto.StudentGradeDTO;
 import com.ecampus.model.TermCourses;
 import com.ecampus.model.Terms;
 import com.ecampus.model.Users;
@@ -29,7 +29,9 @@ import com.ecampus.repository.TermsRepository;
 import com.ecampus.repository.UserRepository;
 import com.ecampus.service.FileService;
 import com.ecampus.service.GradeService;
-import com.ecampus.session.SessionVars;
+import com.ecampus.service.GlobalConstantsService;
+import com.ecampus.session.SessionConstants;
+import jakarta.servlet.http.HttpSession;
 
 @Controller
 @RequestMapping("/faculty")
@@ -54,19 +56,22 @@ public class FacultyDashboardController {
     private GradeService gradeService;
 
     @Autowired
-    private FileService fileService;
+    private GlobalConstantsService globalConstantsService;
 
     @Autowired
-    private SessionVars sessionVars;
+    private FileService fileService;
 
     @GetMapping("/dashboard")
-    public String showCurrentSemesterCourses(Model model, Authentication authentication) {
-        Users faculty = currentFaculty(authentication);
+    public String showCurrentSemesterCourses(Model model, HttpSession session) {
+        Users faculty = currentFaculty(session);
         if (faculty == null) {
             return "redirect:/login";
         }
 
-        // Terms latestTerm = termsRepository.findLatestMinusThree(0);
+        // Long currentTermId = globalConstantsService.getCurrentTermId();
+        // Terms latestTerm = currentTermId == null
+        //         ? null
+        //         : termsRepository.findById(currentTermId).orElse(null);
         Terms latestTerm = termsRepository.findById(50L).orElse(null);
         if (latestTerm == null) {
             model.addAttribute("faculty", faculty);
@@ -125,8 +130,8 @@ public class FacultyDashboardController {
     }
 
     @GetMapping("/change-password")
-    public String changePassword(Authentication authentication) {
-        if (currentFaculty(authentication) == null) {
+    public String changePassword(HttpSession session) {
+        if (currentFaculty(session) == null) {
             return "redirect:/login";
         }
 
@@ -135,11 +140,11 @@ public class FacultyDashboardController {
 
     @PostMapping("/change-password")
     public String changePassword(@RequestParam String newPassword,
-                                 @RequestParam String confirmPassword,
-                                 Authentication authentication,
-                                 RedirectAttributes redirectAttributes) {
+            @RequestParam String confirmPassword,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
 
-        Users faculty = currentFaculty(authentication);
+        Users faculty = currentFaculty(session);
         if (faculty == null) {
             return "redirect:/login";
         }
@@ -166,10 +171,10 @@ public class FacultyDashboardController {
 
     @GetMapping("/grade-statistics")
     public String showGradeStatistics(@RequestParam(required = false) Long tcrid,
-                                      Model model,
-                                      Authentication authentication) {
+            Model model,
+            HttpSession session) {
 
-        Users faculty = currentFaculty(authentication);
+        Users faculty = currentFaculty(session);
         if (faculty == null) {
             return "redirect:/login";
         }
@@ -195,10 +200,10 @@ public class FacultyDashboardController {
 
     @GetMapping("/registrations")
     public String showCourseRegistrations(@RequestParam Long tcrid,
-                                          Model model,
-                                          Authentication authentication) {
+            Model model,
+            HttpSession session) {
 
-        Users faculty = currentFaculty(authentication);
+        Users faculty = currentFaculty(session);
         if (faculty == null) {
             return "redirect:/login";
         }
@@ -224,10 +229,10 @@ public class FacultyDashboardController {
     @GetMapping("/get-courses")
     @ResponseBody
     public List<Map<String, Object>> getCourses(@RequestParam String year,
-                                                @RequestParam String termName,
-                                                Authentication authentication) {
+            @RequestParam String termName,
+            HttpSession session) {
 
-        Users faculty = currentFaculty(authentication);
+        Users faculty = currentFaculty(session);
         if (faculty == null) {
             return List.of();
         }
@@ -250,8 +255,8 @@ public class FacultyDashboardController {
     }
 
     @GetMapping("/past-courses")
-    public String pastCoursesForm(Authentication authentication, Model model) {
-        if (currentFaculty(authentication) == null) {
+    public String pastCoursesForm(HttpSession session, Model model) {
+        if (currentFaculty(session) == null) {
             return "redirect:/login";
         }
 
@@ -261,9 +266,9 @@ public class FacultyDashboardController {
 
     @PostMapping("/past-courses")
     public String pastCoursesResult(@RequestParam Long tcrid,
-                                    @RequestParam String termName,
-                                    @RequestParam String year,
-                                    Model model) {
+            @RequestParam String termName,
+            @RequestParam String year,
+            Model model) {
 
         TermCourses tc = termCoursesRepository.findById(tcrid).orElse(null);
         if (tc == null) {
@@ -279,7 +284,7 @@ public class FacultyDashboardController {
                 1L,
                 List.of("AA", "AB", "BB", "BC", "CC", "CD", "DD", "F", "I", "NULL"))) {
 
-            students.add(new Object[]{
+            students.add(new Object[] {
                     grade.getStudentId(),
                     grade.getStudentName(),
                     grade.getGrade(),
@@ -296,8 +301,8 @@ public class FacultyDashboardController {
     }
 
     @GetMapping("/upload-course")
-    public String uploadCourseForm(Model model, Authentication authentication) {
-        Users faculty = currentFaculty(authentication);
+    public String uploadCourseForm(Model model, HttpSession session) {
+        Users faculty = currentFaculty(session);
         if (faculty == null) {
             return "redirect:/login";
         }
@@ -325,13 +330,13 @@ public class FacultyDashboardController {
     @PostMapping("/upload-course")
     @ResponseBody
     public Map<String, Object> uploadCourse(@RequestParam("file") MultipartFile file,
-                                            @RequestParam Long tcrid,
-                                            @RequestParam String courseCode,
-                                            Authentication authentication) {
+            @RequestParam Long tcrid,
+            @RequestParam String courseCode,
+            HttpSession session) {
 
         Map<String, Object> response = new HashMap<>();
 
-        Users faculty = currentFaculty(authentication);
+        Users faculty = currentFaculty(session);
         if (faculty == null) {
             response.put("success", false);
             response.put("message", "Session expired. Please login again.");
@@ -356,24 +361,15 @@ public class FacultyDashboardController {
         }
     }
 
-    private Users currentFaculty(Authentication authentication) {
+    private Users currentFaculty(HttpSession session) {
 
-        Users user = sessionVars == null ? null : sessionVars.getLoggedInUser();
-
-        if (user == null && authentication != null &&
-                authentication.getName() != null &&
-                !authentication.getName().isBlank()) {
-
-            user = userRepository.findWithName(authentication.getName()).orElse(null);
-        }
+        Users user = (Users) session.getAttribute(SessionConstants.CURRENT_USER);
 
         if (user == null) {
             return null;
         }
 
-        String role = user.getrole();
-
-        if (!"FACULTY".equalsIgnoreCase(role)) {
+        if (!"FACULTY".equalsIgnoreCase(user.getrole())) {
             return null;
         }
 
