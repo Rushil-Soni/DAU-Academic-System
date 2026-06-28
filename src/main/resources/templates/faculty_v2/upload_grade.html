@@ -3,7 +3,10 @@
   <head>
     <title>Grade Upload - Manual & CSV</title>
     <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}" />
-    <meta name="_csrf_header" th:content="${_csrf != null ? _csrf.headerName : ''}" />
+    <meta
+      name="_csrf_header"
+      th:content="${_csrf != null ? _csrf.headerName : ''}"
+    />
 
     <link rel="stylesheet" th:href="@{/css/base.css}" />
     <link rel="stylesheet" th:href="@{/css/faculty.css}" />
@@ -44,7 +47,8 @@
         width: 100%;
         border-collapse: collapse;
       }
-      .csv-preview th, .csv-preview td {
+      .csv-preview th,
+      .csv-preview td {
         border: 1px solid #ddd;
         padding: 8px;
         text-align: left;
@@ -108,7 +112,7 @@
         onclick="this.style.display = 'none'"
         th:text="${warning}"
       ></div>
-      
+
       <div
         style="
           display: flex;
@@ -159,7 +163,12 @@
             method="post"
             th:object="${gradeForm}"
           >
-            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+            <input
+              type="hidden"
+              th:if="${_csrf}"
+              th:name="${_csrf.parameterName}"
+              th:value="${_csrf.token}"
+            />
             <table class="grade-table">
               <thead>
                 <tr>
@@ -201,8 +210,11 @@
         <!-- TAB 2: CSV Upload -->
         <div id="csv" class="tab-content">
           <form id="csvUploadForm" method="post" enctype="multipart/form-data">
-            <div style="margin: 20px 0;">
-              <label for="csvFile" style="display: block; margin-bottom: 10px; font-weight: bold;">
+            <div style="margin: 20px 0">
+              <label
+                for="csvFile"
+                style="display: block; margin-bottom: 10px; font-weight: bold"
+              >
                 Select CSV File
               </label>
               <input
@@ -212,31 +224,113 @@
                 class="form-control"
                 accept=".csv"
                 required
-                style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%;"
+                style="
+                  padding: 8px;
+                  border: 1px solid #ddd;
+                  border-radius: 4px;
+                  width: 100%;
+                "
               />
-              <small style="color: #666; display: block; margin-top: 5px;">
-                Expected columns: <strong>studentid</strong>, <strong>grade</strong>
-                <br/>
-                <span style="color: #d9534f; font-weight: bold;">
-                </span>
+              <small style="color: #666; display: block; margin-top: 5px">
+                Expected columns: <strong>studentid</strong>,
+                <strong>grade</strong>
+                <br />
+                <span style="color: #d9534f; font-weight: bold"> </span>
               </small>
             </div>
 
-            <div style="text-align: center; margin-top: 20px;">
-              <button type="submit" class="btn btn-primary" id="uploadSubmitBtn">
+            <div style="text-align: center; margin-top: 20px">
+              <button
+                type="submit"
+                class="btn btn-primary"
+                id="uploadSubmitBtn"
+              >
                 Upload CSV
               </button>
             </div>
           </form>
 
           <!-- Preview Table after upload -->
-          <div id="csvPreviewContainer" style="display: none; margin-top: 30px;">
-            <h4 style="color: #1f2fb7; margin-bottom: 8px;">Preview - Data Extracted from CSV</h4>
-            <div id="csvPreviewInfo" style="display: none; color: #333; font-size: 0.95rem; margin-bottom: 12px;">
+          <div id="csvPreviewContainer" style="display: none; margin-top: 30px">
+            <div
+              id="csvValidationSummary"
+              class="alert info"
+              style="display: none"
+            ></div>
+
+            <div
+              id="csvIssuesContainer"
+              style="display: none; margin-bottom: 20px"
+            >
+              <div
+                id="unregisteredStudentsBox"
+                style="display: none; margin-bottom: 15px"
+              >
+                <h4 style="color: #721c24">Uploaded but Not Registered</h4>
+                <div class="csv-preview">
+                  <table class="grade-table">
+                    <thead>
+                      <tr>
+                        <th>Student ID</th>
+                        <th>Uploaded Grade</th>
+                        <th>Issue</th>
+                      </tr>
+                    </thead>
+                    <tbody id="unregisteredStudentsBody"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div
+                id="missingGradeStudentsBox"
+                style="display: none; margin-bottom: 15px"
+              >
+                <h4 style="color: #856404">
+                  Registered but Grade Missing in CSV
+                </h4>
+                <div class="csv-preview">
+                  <table class="grade-table">
+                    <thead>
+                      <tr>
+                        <th>Student ID</th>
+                        <th>Student Name</th>
+                        <th>Issue</th>
+                      </tr>
+                    </thead>
+                    <tbody id="missingGradeStudentsBody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <h4 style="color: #1f2fb7; margin-bottom: 8px">
+              Preview - Data Extracted from CSV
+            </h4>
+            <div
+              id="csvPreviewInfo"
+              style="
+                display: none;
+                color: #333;
+                font-size: 0.95rem;
+                margin-bottom: 12px;
+              "
+            >
               Showing <span id="csvPreviewCount">0</span> row(s).
             </div>
-            <div style="max-height: 550px; overflow-y: auto; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 20px; background: #fff;">
-              <table id="csvPreviewTable" class="grade-table table table-bordered" style="width: 100%; margin: 0; border-collapse: collapse;">
+            <div
+              style="
+                max-height: 550px;
+                overflow-y: auto;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                margin-bottom: 20px;
+                background: #fff;
+              "
+            >
+              <table
+                id="csvPreviewTable"
+                class="grade-table table table-bordered"
+                style="width: 100%; margin: 0; border-collapse: collapse"
+              >
                 <thead>
                   <tr></tr>
                 </thead>
@@ -244,104 +338,132 @@
               </table>
             </div>
 
-            <div class="sticky-submit" style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
-              <button type="button" id="confirmSaveBtn" class="btn btn-primary" style="background: #28a745; border: none;">
+            <div
+              class="sticky-submit"
+              style="
+                display: flex;
+                gap: 10px;
+                justify-content: center;
+                margin-top: 20px;
+              "
+            >
+              <button
+                type="button"
+                id="confirmSaveBtn"
+                class="btn btn-primary"
+                style="background: #28a745; border: none"
+              >
                 ✓ Confirm & Save Grades
               </button>
-              <button type="button" id="cancelPreviewBtn" class="btn btn-primary" style="background: #6c757d; border: none;">
+              <button
+                type="button"
+                id="cancelPreviewBtn"
+                class="btn btn-primary"
+                style="background: #6c757d; border: none"
+              >
                 ✕ Cancel & Upload New File
               </button>
             </div>
           </div>
         </div>
+      </div>
     </div>
     <div th:replace="~{fragments/footer :: footer}"></div>
 
     <script>
       function switchTab(tabName, buttonElement) {
-        document.querySelectorAll('.tab-content').forEach(tab => {
-          tab.classList.remove('active');
+        document.querySelectorAll(".tab-content").forEach((tab) => {
+          tab.classList.remove("active");
         });
 
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-          btn.classList.remove('active');
+        document.querySelectorAll(".tab-btn").forEach((btn) => {
+          btn.classList.remove("active");
         });
 
         const tabElement = document.getElementById(tabName);
         if (tabElement) {
-          tabElement.classList.add('active');
+          tabElement.classList.add("active");
         }
         if (buttonElement) {
-          buttonElement.classList.add('active');
+          buttonElement.classList.add("active");
         }
 
-        console.log('Switched to tab:', tabName);
+        console.log("Switched to tab:", tabName);
       }
 
       function initializeTab() {
         const urlParams = new URLSearchParams(window.location.search);
-        const tabParam = urlParams.get('tab');
-        
-        if (tabParam === 'csv') {
-          const csvBtn = document.querySelectorAll('.tab-btn')[1];
+        const tabParam = urlParams.get("tab");
+
+        if (tabParam === "csv") {
+          const csvBtn = document.querySelectorAll(".tab-btn")[1];
           if (csvBtn) {
-            setTimeout(() => switchTab('csv', csvBtn), 100);
+            setTimeout(() => switchTab("csv", csvBtn), 100);
           }
         }
       }
 
-      // CSV Upload Functionality 
-      document.addEventListener('DOMContentLoaded', function () {
+      // CSV Upload Functionality
+      document.addEventListener("DOMContentLoaded", function () {
         initializeTab();
 
-        const form = document.getElementById('csvUploadForm');
-        const alertBox = document.getElementById('upload-alert');
-        const fileInput = document.getElementById('csvFile');
-        const previewDiv = document.getElementById('csvPreviewContainer');
-        const previewTable = document.getElementById('csvPreviewTable');
-        const previewTableBody = document.getElementById('csvPreviewTableBody');
-        const submitBtn = document.querySelector('#csvUploadForm button[type="submit"]');
-        const confirmSaveBtn = document.getElementById('confirmSaveBtn');
-        const cancelPreviewBtn = document.getElementById('cancelPreviewBtn');
+        const form = document.getElementById("csvUploadForm");
+        const alertBox = document.getElementById("upload-alert");
+        const fileInput = document.getElementById("csvFile");
+        const previewDiv = document.getElementById("csvPreviewContainer");
+        const previewTable = document.getElementById("csvPreviewTable");
+        const previewTableBody = document.getElementById("csvPreviewTableBody");
+        const submitBtn = document.querySelector(
+          '#csvUploadForm button[type="submit"]',
+        );
+        const confirmSaveBtn = document.getElementById("confirmSaveBtn");
+        const cancelPreviewBtn = document.getElementById("cancelPreviewBtn");
         const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
-        const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+        const csrfHeader = document.querySelector(
+          'meta[name="_csrf_header"]',
+        )?.content;
 
         let parsedGrades = [];
 
-        console.log('DOM Loaded - CSV Upload elements:', {
+        console.log("DOM Loaded - CSV Upload elements:", {
           form: !!form,
           alertBox: !!alertBox,
           fileInput: !!fileInput,
           previewDiv: !!previewDiv,
           submitBtn: !!submitBtn,
-          confirmSaveBtn: !!confirmSaveBtn
+          confirmSaveBtn: !!confirmSaveBtn,
         });
 
         if (!form || !fileInput || !alertBox) {
-          console.error('Required elements not found!');
+          console.error("Required elements not found!");
           return;
         }
 
-        // CSV Preview Handler 
-        fileInput.addEventListener('change', function () {
+        // CSV Preview Handler
+        fileInput.addEventListener("change", function () {
           const file = fileInput.files[0];
           if (!file) return;
 
-          console.log('File selected:', file.name, 'Size:', file.size);
+          console.log("File selected:", file.name, "Size:", file.size);
 
           const reader = new FileReader();
           reader.onload = function (e) {
             const text = e.target.result;
-            console.log('Raw CSV content (first 500 chars):', text.substring(0, 500));
+            console.log(
+              "Raw CSV content (first 500 chars):",
+              text.substring(0, 500),
+            );
 
-            const delimiters = [',', '\t', ';', '|'];
-            let delimiter = ',';
-            let lines = text.trim().split('\n');
-            
+            const delimiters = [",", "\t", ";", "|"];
+            let delimiter = ",";
+            let lines = text.trim().split("\n");
+
             if (lines.length > 0) {
               let maxCount = 0;
               for (let delim of delimiters) {
-                let count = (lines[0].match(new RegExp('\\' + delim, 'g')) || []).length;
+                let count = (
+                  lines[0].match(new RegExp("\\" + delim, "g")) || []
+                ).length;
                 if (count > maxCount) {
                   maxCount = count;
                   delimiter = delim;
@@ -349,117 +471,162 @@
               }
             }
 
-            console.log('Detected delimiter:', delimiter === '\t' ? 'TAB' : delimiter, 'Count:', maxCount);
+            console.log(
+              "Detected delimiter:",
+              delimiter === "\t" ? "TAB" : delimiter,
+              "Count:",
+              maxCount,
+            );
 
             // Parse CSV with detected delimiter
-            const rows = lines.map(line => line.split(delimiter).map(col => col.trim()));
-            
-            console.log('Parsed rows:', rows.length);
-            console.log('First row (header):', rows[0]);
-            console.log('Second row (data):', rows[1]);
+            const rows = lines.map((line) =>
+              line.split(delimiter).map((col) => col.trim()),
+            );
+
+            console.log("Parsed rows:", rows.length);
+            console.log("First row (header):", rows[0]);
+            console.log("Second row (data):", rows[1]);
 
             if (rows.length > 0 && previewTable) {
               // Clear old preview
-              previewTable.querySelector('thead').innerHTML = '';
-              previewTable.querySelector('tbody').innerHTML = '';
+              previewTable.querySelector("thead").innerHTML = "";
+              previewTable.querySelector("tbody").innerHTML = "";
 
               // Header
               const headerRow = rows[0]
-                .map(col => `<th style="position: sticky; top: 0; background: #f8f9fa; z-index: 1;">${col.trim()}</th>`)
-                .join('');
-              previewTable.querySelector('thead').innerHTML = `<tr>${headerRow}</tr>`;
+                .map(
+                  (col) =>
+                    `<th style="position: sticky; top: 0; background: #f8f9fa; z-index: 1;">${col.trim()}</th>`,
+                )
+                .join("");
+              previewTable.querySelector("thead").innerHTML =
+                `<tr>${headerRow}</tr>`;
 
               // Show all data rows (skip header)
               rows.slice(1).forEach((row) => {
-                if (row.some(cell => cell && cell.trim() !== '')) {
-                  const rowHtml = row.map(col => `<td>${col.trim()}</td>`).join('');
-                  previewTable.querySelector('tbody').innerHTML += `<tr>${rowHtml}</tr>`;
+                if (row.some((cell) => cell && cell.trim() !== "")) {
+                  const rowHtml = row
+                    .map((col) => `<td>${col.trim()}</td>`)
+                    .join("");
+                  previewTable.querySelector("tbody").innerHTML +=
+                    `<tr>${rowHtml}</tr>`;
                 }
               });
 
               const rowCount = Math.max(0, rows.length - 1);
-              const previewCount = document.getElementById('csvPreviewCount');
-              const previewInfo = document.getElementById('csvPreviewInfo');
+              const previewCount = document.getElementById("csvPreviewCount");
+              const previewInfo = document.getElementById("csvPreviewInfo");
               if (previewCount) previewCount.textContent = rowCount;
-              if (previewInfo) previewInfo.style.display = 'block';
+              if (previewInfo) previewInfo.style.display = "block";
 
-              if (previewDiv) previewDiv.classList.remove('d-none');
-              console.log('CSV preview loaded successfully with ' + rowCount + ' rows');
+              if (previewDiv) previewDiv.classList.remove("d-none");
+              console.log(
+                "CSV preview loaded successfully with " + rowCount + " rows",
+              );
             }
           };
           reader.readAsText(file);
         });
 
-        //  Form Submission Handler 
+        //  Form Submission Handler
         const handleUpload = function (e) {
           e.preventDefault();
-          console.log('Upload started...');
+          console.log("Upload started...");
 
           if (!fileInput.files || fileInput.files.length === 0) {
-            showAlert('Please select a CSV file first.', 'warning');
+            showAlert("Please select a CSV file first.", "warning");
             return;
           }
 
           const file = fileInput.files[0];
-          console.log('Uploading file:', file.name, 'Size:', file.size, 'Type:', file.type);
+          console.log(
+            "Uploading file:",
+            file.name,
+            "Size:",
+            file.size,
+            "Type:",
+            file.type,
+          );
 
           const formData = new FormData(form);
-          
-          console.log('FormData entries:');
+
+          console.log("FormData entries:");
           for (let [key, value] of formData.entries()) {
             if (value instanceof File) {
-              console.log(`  ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
+              console.log(
+                `  ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`,
+              );
             } else {
               console.log(`  ${key}: ${value}`);
             }
           }
 
           if (submitBtn) submitBtn.disabled = true;
-          showAlert('Uploading... Please wait', 'info');
+          showAlert("Uploading... Please wait", "info");
 
           const uploadHeaders = {};
           if (csrfToken && csrfHeader) uploadHeaders[csrfHeader] = csrfToken;
 
-          fetch('/grades/uploadcsv', {
-            method: 'POST',
+          fetch("/grades/uploadcsv", {
+            method: "POST",
             headers: uploadHeaders,
             body: formData,
           })
             .then((res) => {
-              console.log('Response received:');
-              console.log('  Status:', res.status, res.statusText);
-              console.log('  Content-Type:', res.headers.get('content-type'));
-              
+              console.log("Response received:");
+              console.log("  Status:", res.status, res.statusText);
+              console.log("  Content-Type:", res.headers.get("content-type"));
+
               return res.text().then((text) => {
-                console.log('  Body:', text.substring(0, 300));
+                console.log("  Body:", text.substring(0, 300));
                 try {
-                  return { ok: res.ok, status: res.status, data: JSON.parse(text) };
+                  return {
+                    ok: res.ok,
+                    status: res.status,
+                    data: JSON.parse(text),
+                  };
                 } catch (e) {
-                  console.error('Failed to parse JSON:', e);
-                  return { ok: res.ok, status: res.status, data: { message: text } };
+                  console.error("Failed to parse JSON:", e);
+                  return {
+                    ok: res.ok,
+                    status: res.status,
+                    data: { message: text },
+                  };
                 }
               });
             })
             .then(({ ok, status, data }) => {
-              console.log('Parsed response:', data);
+              console.log("Parsed response:", data);
               if (ok) {
-                parsedGrades = data.gradesList || [];
-                console.log('Stored ' + parsedGrades.length + ' grades for preview');
+                const validation = data.validation || {};
+                parsedGrades = validation.validGrades || data.gradesList || [];
 
-                showAlert(data.message || 'CSV preview loaded. Please review below.', 'info');
-                
+                console.log(
+                  "Stored " + parsedGrades.length + " valid grades for preview",
+                );
+
+                showAlert(
+                  data.message || "CSV preview loaded. Please review below.",
+                  "info",
+                );
+
+                displayValidationSummary(validation);
+                displayIssueTables(validation);
                 displayPreviewTable(parsedGrades);
-                
-                form.style.display = 'none';
-                if (previewDiv) previewDiv.style.display = 'block';
+
+                form.style.display = "none";
+                if (previewDiv) previewDiv.style.display = "block";
               } else {
-                showAlert(data.message || `Error (${status}): Upload failed`, 'danger');
-                console.log('Upload failed with status:', status);
+                showAlert(
+                  data.message || `Error (${status}): Upload failed`,
+                  "danger",
+                );
+                console.log("Upload failed with status:", status);
               }
             })
             .catch((error) => {
-              console.error('Fetch error:', error);
-              showAlert('Network error: ' + error.message, 'danger');
+              console.error("Fetch error:", error);
+              showAlert("Network error: " + error.message, "danger");
             })
             .finally(() => {
               if (submitBtn) submitBtn.disabled = false;
@@ -467,69 +634,192 @@
         };
 
         function displayPreviewTable(gradesList) {
-          if (!previewTableBody) return;
-          
-          previewTableBody.innerHTML = '';
-          gradesList.forEach((grade, index) => {
+          if (!previewTableBody || !previewTable) return;
+
+          previewTable.querySelector("thead").innerHTML = `
+    <tr>
+      <th>Student ID</th>
+      <th>Student Name</th>
+      <th>Grade</th>
+      <th>Status</th>
+    </tr>
+  `;
+
+          previewTableBody.innerHTML = "";
+
+          gradesList.forEach((grade) => {
             const row = `
-              <tr>
-                <td>${grade.studentId || '-'}</td>
-                <td>${grade.modifiedGrade || grade.grade || '-'}</td>
-              </tr>
-            `;
+      <tr>
+        <td>${grade.studentId || "-"}</td>
+        <td>${grade.studentName || "-"}</td>
+        <td>${grade.modifiedGrade || grade.grade || "-"}</td>
+        <td>Ready to Save</td>
+      </tr>
+    `;
             previewTableBody.innerHTML += row;
           });
-          console.log('Preview table populated with ' + gradesList.length + ' entries');
+
+          const previewCount = document.getElementById("csvPreviewCount");
+          const previewInfo = document.getElementById("csvPreviewInfo");
+
+          if (previewCount) previewCount.textContent = gradesList.length;
+          if (previewInfo) previewInfo.style.display = "block";
+
+          console.log(
+            "Preview table populated with " +
+              gradesList.length +
+              " valid entries",
+          );
+        }
+
+        function displayValidationSummary(validation) {
+          const summaryBox = document.getElementById("csvValidationSummary");
+
+          if (!summaryBox || !validation) return;
+
+          summaryBox.style.display = "block";
+          summaryBox.textContent =
+            `CSV Validation Summary: ` +
+            `Total CSV Rows: ${validation.totalCsvRows || 0}, ` +
+            `Valid Registered Students: ${validation.validCount || 0}, ` +
+            `Uploaded but Not Registered: ${validation.unregisteredCount || 0}, ` +
+            `Registered but Grade Missing: ${validation.missingGradeCount || 0}.`;
+        }
+
+        function displayIssueTables(validation) {
+          const issuesContainer = document.getElementById("csvIssuesContainer");
+
+          const unregisteredBox = document.getElementById(
+            "unregisteredStudentsBox",
+          );
+          const unregisteredBody = document.getElementById(
+            "unregisteredStudentsBody",
+          );
+
+          const missingBox = document.getElementById("missingGradeStudentsBox");
+          const missingBody = document.getElementById(
+            "missingGradeStudentsBody",
+          );
+
+          const uploadedButNotRegistered =
+            validation.uploadedButNotRegistered || [];
+          const registeredButGradeMissing =
+            validation.registeredButGradeMissing || [];
+
+          if (issuesContainer) {
+            issuesContainer.style.display =
+              uploadedButNotRegistered.length > 0 ||
+              registeredButGradeMissing.length > 0
+                ? "block"
+                : "none";
+          }
+
+          if (unregisteredBox && unregisteredBody) {
+            unregisteredBody.innerHTML = "";
+
+            uploadedButNotRegistered.forEach((student) => {
+              unregisteredBody.innerHTML += `
+        <tr>
+          <td>${student.studentId || "-"}</td>
+          <td>${student.modifiedGrade || student.grade || "-"}</td>
+          <td>Student is not registered in this course. Grade will not be saved.</td>
+        </tr>
+      `;
+            });
+
+            unregisteredBox.style.display =
+              uploadedButNotRegistered.length > 0 ? "block" : "none";
+          }
+
+          if (missingBox && missingBody) {
+            missingBody.innerHTML = "";
+
+            registeredButGradeMissing.forEach((student) => {
+              missingBody.innerHTML += `
+        <tr>
+          <td>${student.studentId || "-"}</td>
+          <td>${student.studentName || "-"}</td>
+          <td>Student is registered but grade was not provided in CSV.</td>
+        </tr>
+      `;
+            });
+
+            missingBox.style.display =
+              registeredButGradeMissing.length > 0 ? "block" : "none";
+          }
         }
 
         if (confirmSaveBtn) {
-          confirmSaveBtn.addEventListener('click', function() {
-            console.log('Confirm save clicked. Saving ' + parsedGrades.length + ' grades...');
-            
+          confirmSaveBtn.addEventListener("click", function () {
+            console.log(
+              "Confirm save clicked. Saving " +
+                parsedGrades.length +
+                " grades...",
+            );
+
             if (parsedGrades.length === 0) {
-              showAlert('No grades to save.', 'warning');
+              showAlert("No grades to save.", "warning");
               return;
             }
 
             confirmSaveBtn.disabled = true;
-            showAlert('Saving grades... Please wait', 'info');
+            showAlert("Saving grades... Please wait", "info");
 
-            fetch('/grades/savecsv', {
-              method: 'POST',
+            fetch("/grades/savecsv", {
+              method: "POST",
               headers: {
-                'Content-Type': 'application/json',
-                ...(csrfToken && csrfHeader ? { [csrfHeader]: csrfToken } : {})
+                "Content-Type": "application/json",
+                ...(csrfToken && csrfHeader ? { [csrfHeader]: csrfToken } : {}),
               },
-              body: JSON.stringify(parsedGrades)
+              body: JSON.stringify(parsedGrades),
             })
               .then((res) => {
                 return res.text().then((text) => {
                   try {
-                    return { ok: res.ok, status: res.status, data: JSON.parse(text) };
+                    return {
+                      ok: res.ok,
+                      status: res.status,
+                      data: JSON.parse(text),
+                    };
                   } catch (e) {
-                    return { ok: res.ok, status: res.status, data: { message: text } };
+                    return {
+                      ok: res.ok,
+                      status: res.status,
+                      data: { message: text },
+                    };
                   }
                 });
               })
               .then(({ ok, status, data }) => {
                 if (ok) {
-                  showAlert((data.message || 'Grades saved successfully!'), 'success');
-                  
+                  showAlert(
+                    data.message || "Grades saved successfully!",
+                    "success",
+                  );
+
                   setTimeout(() => {
                     form.reset();
-                    form.style.display = 'block';
-                    if (previewDiv) previewDiv.style.display = 'none';
+                    form.style.display = "block";
+                    if (previewDiv) previewDiv.style.display = "none";
                     parsedGrades = [];
-                    previewTableBody.innerHTML = '';
-                    alertBox.classList.add('d-none');
+                    previewTableBody.innerHTML = "";
+                    alertBox.classList.add("d-none");
+                    const summaryBox = document.getElementById(
+                      "csvValidationSummary",
+                    );
+                    const issuesContainer =
+                      document.getElementById("csvIssuesContainer");
+
+                    if (summaryBox) summaryBox.style.display = "none";
+                    if (issuesContainer) issuesContainer.style.display = "none";
                   }, 2000);
                 } else {
-                  showAlert(data.message || 'Error saving grades', 'danger');
+                  showAlert(data.message || "Error saving grades", "danger");
                 }
               })
               .catch((error) => {
-                console.error('Fetch error:', error);
-                showAlert('Network error: ' + error.message, 'danger');
+                console.error("Fetch error:", error);
+                showAlert("Network error: " + error.message, "danger");
               })
               .finally(() => {
                 confirmSaveBtn.disabled = false;
@@ -538,20 +828,26 @@
         }
 
         if (cancelPreviewBtn) {
-          cancelPreviewBtn.addEventListener('click', function() {
-            console.log('Cancel preview clicked');
-            form.style.display = 'block';
-            if (previewDiv) previewDiv.style.display = 'none';
+          cancelPreviewBtn.addEventListener("click", function () {
+            console.log("Cancel preview clicked");
+            form.style.display = "block";
+            if (previewDiv) previewDiv.style.display = "none";
             form.reset();
             parsedGrades = [];
-            previewTableBody.innerHTML = '';
-            alertBox.classList.add('d-none');
+            previewTableBody.innerHTML = "";
+            alertBox.classList.add("d-none");
+            const summaryBox = document.getElementById("csvValidationSummary");
+            const issuesContainer =
+              document.getElementById("csvIssuesContainer");
+
+            if (summaryBox) summaryBox.style.display = "none";
+            if (issuesContainer) issuesContainer.style.display = "none";
           });
         }
 
-        form.addEventListener('submit', handleUpload);
+        form.addEventListener("submit", handleUpload);
         if (submitBtn) {
-          submitBtn.addEventListener('click', function(e) {
+          submitBtn.addEventListener("click", function (e) {
             if (form) handleUpload.call(form, e);
           });
         }
@@ -559,12 +855,12 @@
         function showAlert(message, type) {
           alertBox.className = `alert ${type} `;
           alertBox.textContent = message;
-          alertBox.classList.remove('d-none');
+          alertBox.classList.remove("d-none");
           console.log(`Alert [${type}]: ${message}`);
 
-          if (type !== 'info') {
+          if (type !== "info") {
             setTimeout(() => {
-              alertBox.classList.add('d-none');
+              alertBox.classList.add("d-none");
             }, 8000);
           }
         }

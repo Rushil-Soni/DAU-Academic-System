@@ -6,7 +6,7 @@ import java.util.Map;
 
 import org.springframework.web.multipart.MultipartFile;
 
-import com.ecampus.model.StudentGradeDTO;
+import com.ecampus.dto.StudentGradeDTO;
 
 public interface FileService {
 

@@ -101,6 +101,7 @@
           th:object="${gradeForm}"
         >
           <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+          <input type="hidden" name="requestSource" value="MODIFY_GRADE" />
           <table class="grade-table">
             <thead>
               <tr>

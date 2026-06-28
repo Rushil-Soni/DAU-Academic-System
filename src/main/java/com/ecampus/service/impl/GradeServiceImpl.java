@@ -8,19 +8,24 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.LinkedHashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.ecampus.dto.GradeChangeStatusDTO;
+import com.ecampus.dto.StudentGradeDTO;
+import com.ecampus.dto.GradeUploadValidationResult;
+import com.ecampus.dto.RegisteredStudentGradeProjection;
 import com.ecampus.model.Egcrstt1;
 import com.ecampus.model.Egcrstt1Id;
 import com.ecampus.model.Eggradm1;
 import com.ecampus.model.Grade;
-import com.ecampus.model.GradeChangeStatusDTO;
 import com.ecampus.model.GradeModRequestDetails;
 import com.ecampus.model.GradeModRequests;
-import com.ecampus.model.StudentGradeDTO;
 import com.ecampus.model.Students;
 import com.ecampus.model.TermCourses;
 import com.ecampus.model.WorkTrail;
@@ -29,6 +34,7 @@ import com.ecampus.repository.Egcrstt1Repository;
 import com.ecampus.repository.Eggradm1Repository;
 import com.ecampus.repository.GradeModRequestDetailsRepository;
 import com.ecampus.repository.GradeModRequestsRepository;
+import com.ecampus.repository.StudentRegistrationCoursesRepository;
 import com.ecampus.repository.StudentsRepository;
 import com.ecampus.repository.TermCoursesRepository;
 import com.ecampus.repository.TermsRepository;
@@ -74,6 +80,9 @@ public class GradeServiceImpl implements GradeService {
     @Autowired
     private GradeModificationService gradeModificationService;
 
+    @Autowired
+    private StudentRegistrationCoursesRepository studentRegistrationCoursesRepository;
+
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -87,7 +96,8 @@ public class GradeServiceImpl implements GradeService {
     }
 
     @Override
-    public List<StudentGradeDTO> getStudentGrades(Long crsid, Long trmid, Long examTypeId, List<String> selectedGrades) {
+    public List<StudentGradeDTO> getStudentGrades(Long crsid, Long trmid, Long examTypeId,
+            List<String> selectedGrades) {
         Long tcrid = termCoursesRepository.findTcridByCrsidAndTrmid(crsid, trmid);
         if (tcrid == null) {
             return new ArrayList<>();
@@ -147,6 +157,111 @@ public class GradeServiceImpl implements GradeService {
         }
 
         return grades;
+    }
+
+    @Override
+    public List<StudentGradeDTO> getRegisteredStudentsForCourse(Long tcrid) {
+        if (tcrid == null) {
+            return new ArrayList<>();
+        }
+
+        return studentRegistrationCoursesRepository.findRegisteredStudentsForGradeUpload(tcrid)
+                .stream()
+                .map(this::toStudentGradeDTO)
+                .toList();
+    }
+
+    private StudentGradeDTO toStudentGradeDTO(RegisteredStudentGradeProjection row) {
+        StudentGradeDTO dto = new StudentGradeDTO();
+        dto.setStudentId(row.getStudentId());
+        dto.setStudentName(row.getStudentName());
+        dto.setStudentEmail(row.getStudentEmail());
+        dto.setGrade(row.getGrade());
+        dto.setModifiedGrade(null);
+        dto.setSelectedForUpdate(false);
+        return dto;
+    }
+
+    @Override
+    public boolean gradesAlreadyUploaded(Long tcrid, Long examTypeId) {
+        if (tcrid == null || examTypeId == null) {
+            return false;
+        }
+
+        Long count = egcrstt1Repository.countUploadedGrades(tcrid, examTypeId);
+        return count != null && count > 0;
+    }
+
+    @Override
+    public GradeUploadValidationResult validateCsvGrades(List<StudentGradeDTO> csvGrades, Long tcrid) {
+
+        GradeUploadValidationResult result = new GradeUploadValidationResult();
+
+        List<StudentGradeDTO> uploaded = csvGrades == null ? new ArrayList<>() : csvGrades;
+        List<StudentGradeDTO> registered = getRegisteredStudentsForCourse(tcrid);
+
+        Map<String, StudentGradeDTO> registeredMap = new LinkedHashMap<>();
+
+        for (StudentGradeDTO registeredStudent : registered) {
+            String key = registeredStudent.getStudentId();
+
+            if (key != null) {
+                registeredMap.put(key, registeredStudent);
+            }
+        }
+
+        Set<String> uploadedIds = new HashSet<>();
+
+        List<StudentGradeDTO> validGrades = new ArrayList<>();
+        List<StudentGradeDTO> uploadedButNotRegistered = new ArrayList<>();
+
+        for (StudentGradeDTO uploadedGrade : uploaded) {
+            String key = uploadedGrade.getStudentId();
+
+            if (key == null) {
+                continue;
+            }
+
+            uploadedIds.add(key);
+
+            StudentGradeDTO registeredStudent = registeredMap.get(key);
+
+            if (registeredStudent == null) {
+                uploadedButNotRegistered.add(uploadedGrade);
+                continue;
+            }
+
+            StudentGradeDTO valid = new StudentGradeDTO();
+            valid.setStudentId(registeredStudent.getStudentId());
+            valid.setStudentName(registeredStudent.getStudentName());
+            valid.setStudentEmail(registeredStudent.getStudentEmail());
+            valid.setGrade(uploadedGrade.getGrade());
+            valid.setModifiedGrade(firstNonBlank(uploadedGrade.getModifiedGrade(), uploadedGrade.getGrade()));
+            valid.setSelectedForUpdate(true);
+
+            validGrades.add(valid);
+        }
+
+        List<StudentGradeDTO> registeredButGradeMissing = new ArrayList<>();
+
+        for (StudentGradeDTO registeredStudent : registered) {
+            String key = registeredStudent.getStudentId();
+
+            if (key != null && !uploadedIds.contains(key)) {
+                registeredButGradeMissing.add(registeredStudent);
+            }
+        }
+
+        result.setValidGrades(validGrades);
+        result.setUploadedButNotRegistered(uploadedButNotRegistered);
+        result.setRegisteredButGradeMissing(registeredButGradeMissing);
+
+        result.setTotalCsvRows(uploaded.size());
+        result.setValidCount(validGrades.size());
+        result.setUnregisteredCount(uploadedButNotRegistered.size());
+        result.setMissingGradeCount(registeredButGradeMissing.size());
+
+        return result;
     }
 
     @Transactional
@@ -425,4 +540,5 @@ public class GradeServiceImpl implements GradeService {
     private String normalizedAction(String action) {
         return "approve".equalsIgnoreCase(action) || "approved".equalsIgnoreCase(action) ? "APPROVE" : "REJECT";
     }
+
 }

@@ -34,6 +34,8 @@
         th:text="${warning}"
       ></div>
 
+      <div id="messageBox" style="display: none"></div>
+
       <!-- Header -->
       <div
         style="
@@ -67,10 +69,17 @@
 
         <!-- FORM -->
         <form
-          th:action="@{/grades/reviseIGrade}"
+          th:action="@{/grades/request}"
           method="post"
           th:object="${gradeForm}"
         >
+          <input type="hidden" name="requestSource" value="REVISE_I_GRADE" />
+          <input
+            type="hidden"
+            th:if="${_csrf}"
+            th:name="${_csrf.parameterName}"
+            th:value="${_csrf.token}"
+          />
           <table class="grade-table">
             <thead>
               <tr>
@@ -94,11 +103,23 @@
                 </td>
 
                 <!-- Student -->
-                <td th:text="${g.studentId}"></td>
+                <td>
+                  <span th:text="${g.studentId}"></span>
+                  <input
+                    type="hidden"
+                    th:field="*{gradesList[__${stat.index}__].studentId}"
+                  />
+                </td>
                 <td th:text="${g.studentName}"></td>
 
                 <!-- Current Grade -->
-                <td th:text="${g.grade}" class="grade-I"></td>
+                <td>
+                  <span th:text="${g.grade}" class="grade-I"></span>
+                  <input
+                    type="hidden"
+                    th:field="*{gradesList[__${stat.index}__].grade}"
+                  />
+                </td>
 
                 <!-- New Grade -->
                 <td>
@@ -128,6 +149,12 @@
 
           <!-- Sticky Submit -->
           <div class="sticky-submit">
+            <label><b>Remarks for Dean:</b></label>
+            <br />
+            <textarea name="deanRemark" rows="3" style="width: 100%"></textarea>
+
+            <br /><br />
+
             <button class="btn" type="submit">Submit for Approval</button>
           </div>
         </form>
@@ -185,6 +212,18 @@
           e.preventDefault();
         }
       });
+
+      function showMessage(type, text) {
+        let box = document.getElementById("messageBox");
+
+        box.className = "message message-" + type;
+        box.innerText = text;
+        box.style.display = "block";
+
+        setTimeout(() => {
+          box.style.display = "none";
+        }, 4000);
+      }
     </script>
   </body>
 </html>

@@ -21,13 +21,16 @@ import org.springframework.web.bind.annotation.SessionAttributes;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.ecampus.dto.GradeChangeStatusDTO;
+import com.ecampus.dto.GradeUploadValidationResult;
+import com.ecampus.dto.StudentGradeDTO;
+import com.ecampus.dto.StudentGradeDTOWrapper;
 import com.ecampus.model.Courses;
 import com.ecampus.model.Grade;
-import com.ecampus.model.GradeChangeStatusDTO;
-import com.ecampus.model.StudentGradeDTO;
-import com.ecampus.model.StudentGradeDTOWrapper;
 import com.ecampus.model.TermCourses;
+import com.ecampus.model.Users;
 import com.ecampus.repository.TermCoursesRepository;
+import com.ecampus.session.SessionConstants;
 import com.ecampus.service.FileService;
 import com.ecampus.service.GradeService;
 
@@ -59,6 +62,7 @@ public class GradeController {
         session.setAttribute("CRSID", crsid);
         session.setAttribute("TRMID", trmid);
         session.setAttribute("examTypeId", 1L);
+        session.setAttribute("TCRID", tcrid);
 
         Courses course = tc.getCourse();
         model.addAttribute("studentGrades", gradeService.getStudentGrades(crsid, trmid, 1L,
@@ -76,87 +80,187 @@ public class GradeController {
     }
 
     @GetMapping("/upload")
-    public String prepareUpload(@RequestParam Long tcrid, HttpSession session) {
+    public String prepareUpload(@RequestParam Long tcrid,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+
         TermCourses tc = termCourseRepository.findById(tcrid).orElse(null);
+
         if (tc == null) {
+            redirectAttributes.addFlashAttribute("error", "Invalid course selected.");
             return "redirect:/faculty/dashboard";
         }
+
+        Long examTypeId = 1L;
+
+        if (gradeService.gradesAlreadyUploaded(tcrid, examTypeId)) {
+            redirectAttributes.addFlashAttribute("error",
+                    "Grades have already been uploaded for this course. Re-upload is not allowed. Please use the grade modification process if changes are required.");
+            return "redirect:/faculty/dashboard";
+        }
+
+        session.setAttribute("TCRID", tcrid);
         session.setAttribute("CRSID", tc.getTcrcrsid());
         session.setAttribute("TRMID", tc.getTcrtrmid());
-        session.setAttribute("examTypeId", 1L);
+        session.setAttribute("examTypeId", examTypeId);
+
         return "redirect:/grades/upload/form";
     }
 
     @GetMapping("/upload/form")
-    public String showUploadForm(ModelMap model, HttpSession session) {
+    public String showUploadForm(ModelMap model,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+
         Long crsid = (Long) session.getAttribute("CRSID");
         Long trmid = (Long) session.getAttribute("TRMID");
         Long examTypeId = (Long) session.getAttribute("examTypeId");
-        if (crsid == null || trmid == null || examTypeId == null) {
+        Long tcrid = currentTcrid(session);
+
+        if (crsid == null || trmid == null || examTypeId == null || tcrid == null) {
+            redirectAttributes.addFlashAttribute("error", "Session expired or incomplete course context.");
+            return "redirect:/faculty/dashboard";
+        }
+
+        if (gradeService.gradesAlreadyUploaded(tcrid, examTypeId)) {
+            redirectAttributes.addFlashAttribute("error",
+                    "Grades have already been uploaded for this course. Re-upload is not allowed. Please use the grade modification process if changes are required.");
             return "redirect:/faculty/dashboard";
         }
 
         StudentGradeDTOWrapper gradeForm = new StudentGradeDTOWrapper();
-        gradeForm.setGradesList(gradeService.getStudentGrades(crsid, trmid, examTypeId,
-                List.of("AA", "AB", "BB", "BC", "CC", "CD", "DD", "F", "I", "NULL")));
+        gradeForm.setGradesList(gradeService.getRegisteredStudentsForCourse(tcrid));
+
         model.addAttribute("TermName", gradeService.getTermName(trmid));
         model.addAttribute("CourseName", gradeService.getCourseName(crsid));
         model.addAttribute("grades", gradeService.getAllGrades());
         model.addAttribute("gradeForm", gradeForm);
+
         return "faculty_v2/upload_grade";
     }
 
     @PostMapping("/upload")
     public String saveGrades(@ModelAttribute("gradeForm") StudentGradeDTOWrapper gradeWrapper,
-            HttpSession session, RedirectAttributes redirectAttributes) {
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+
         Long tcrid = currentTcrid(session);
         Long examTypeId = (Long) session.getAttribute("examTypeId");
+
         if (tcrid == null || examTypeId == null) {
             redirectAttributes.addFlashAttribute("error", "Session expired or incomplete context.");
+            return "redirect:/faculty/dashboard";
+        }
+
+        if (gradeService.gradesAlreadyUploaded(tcrid, examTypeId)) {
+            redirectAttributes.addFlashAttribute("error",
+                    "Grades have already been uploaded for this course. Re-upload is not allowed. Please use the grade modification process if changes are required.");
             return "redirect:/faculty/dashboard";
         }
 
         List<StudentGradeDTO> gradesToProcess = gradeWrapper.getGradesList().stream()
                 .filter(dto -> dto.getModifiedGrade() != null && !dto.getModifiedGrade().isBlank())
                 .collect(Collectors.toList());
+
         if (gradesToProcess.isEmpty()) {
             redirectAttributes.addFlashAttribute("warning", "No grades were entered.");
             return "redirect:/grades/upload/form";
         }
 
-        gradeService.saveOrUpdateGrades(gradesToProcess, tcrid, examTypeId);
-        redirectAttributes.addFlashAttribute("success", "Grades updated successfully.");
+        GradeUploadValidationResult validation = gradeService.validateCsvGrades(gradesToProcess, tcrid);
+
+        if (validation.getValidGrades().isEmpty()) {
+            redirectAttributes.addFlashAttribute("error",
+                    "No valid registered students were found for grade upload.");
+            return "redirect:/grades/upload/form";
+        }
+
+        gradeService.saveOrUpdateGrades(validation.getValidGrades(), tcrid, examTypeId);
+
+        redirectAttributes.addFlashAttribute("success",
+                "Grades uploaded successfully for " + validation.getValidCount() + " registered student(s).");
+
         return "redirect:/faculty/dashboard";
     }
 
     @PostMapping("/uploadcsv")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> previewCsv(@RequestParam("file") MultipartFile file) throws Exception {
+    public ResponseEntity<Map<String, Object>> previewCsv(@RequestParam("file") MultipartFile file,
+            HttpSession session) throws Exception {
+
         Map<String, Object> response = new HashMap<>();
+
+        Long tcrid = currentTcrid(session);
+        Long examTypeId = (Long) session.getAttribute("examTypeId");
+
+        if (tcrid == null || examTypeId == null) {
+            response.put("message", "Session expired or incomplete course context.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        if (gradeService.gradesAlreadyUploaded(tcrid, examTypeId)) {
+            response.put("message",
+                    "Grades have already been uploaded for this course. Re-upload is not allowed. Please use the grade modification process if changes are required.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
         if (!fileService.hasCsvFormat(file)) {
             response.put("message", "Please upload a CSV file.");
             return ResponseEntity.badRequest().body(response);
         }
 
         List<StudentGradeDTO> parsed = fileService.csvToStudentGradeDTOs(file.getInputStream());
-        response.put("message", "CSV parsed successfully.");
-        response.put("gradesList", parsed);
+
+        GradeUploadValidationResult validation = gradeService.validateCsvGrades(parsed, tcrid);
+
+        response.put("message", "CSV parsed and validated successfully.");
+        response.put("validation", validation);
+        response.put("gradesList", validation.getValidGrades());
+
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/savecsv")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> saveCsv(@RequestBody List<StudentGradeDTO> grades, HttpSession session) {
+    public ResponseEntity<Map<String, Object>> saveCsv(@RequestBody List<StudentGradeDTO> grades,
+            HttpSession session) {
+
         Map<String, Object> response = new HashMap<>();
+
         Long tcrid = currentTcrid(session);
         Long examTypeId = (Long) session.getAttribute("examTypeId");
+
         if (tcrid == null || examTypeId == null) {
             response.put("message", "Session expired or incomplete context.");
             return ResponseEntity.badRequest().body(response);
         }
 
-        gradeService.saveOrUpdateGrades(grades, tcrid, examTypeId);
-        response.put("message", "Grades saved successfully.");
+        if (gradeService.gradesAlreadyUploaded(tcrid, examTypeId)) {
+            response.put("message",
+                    "Grades have already been uploaded for this course. Re-upload is not allowed. Please use the grade modification process if changes are required.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        GradeUploadValidationResult validation = gradeService.validateCsvGrades(grades, tcrid);
+
+        if (validation.getValidGrades().isEmpty()) {
+            response.put("message", "No valid registered students were found in the uploaded CSV.");
+            response.put("validation", validation);
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        gradeService.saveOrUpdateGrades(validation.getValidGrades(), tcrid, examTypeId);
+
+        response.put("message",
+                "Grades saved successfully for " + validation.getValidCount()
+                        + " registered student(s). "
+                        + validation.getMissingGradeCount()
+                        + " registered student(s) did not have grades in the CSV. "
+                        + validation.getUnregisteredCount()
+                        + " uploaded student(s) were not registered and were skipped.");
+
+        response.put("validation", validation);
+
         return ResponseEntity.ok(response);
     }
 
@@ -233,11 +337,6 @@ public class GradeController {
         return "faculty_v2/revise_IGrade";
     }
 
-    @PostMapping("/reviseIGrade")
-    public String saveReviseGrade(@ModelAttribute("gradeForm") StudentGradeDTOWrapper gradeWrapper,
-            HttpSession session, RedirectAttributes redirectAttributes) {
-        return saveGrades(gradeWrapper, session, redirectAttributes);
-    }
 
     @GetMapping("/approval/status")
     public String viewStatus(@RequestParam(name = "tcrid", required = false) Long tcrid,
@@ -251,7 +350,7 @@ public class GradeController {
 
         Long crsid = (Long) session.getAttribute("CRSID");
         Long trmid = (Long) session.getAttribute("TRMID");
-        Long facultyId = (Long) session.getAttribute("userid");
+        Long facultyId = currentUserId(session);
         if (crsid == null || trmid == null || facultyId == null) {
             return "redirect:/faculty/dashboard";
         }
@@ -270,7 +369,7 @@ public class GradeController {
 
     @GetMapping("/approval/dean")
     public String viewPendingDeanRequests(ModelMap model, HttpSession session) {
-        Long userId = (Long) session.getAttribute("userid");
+        Long userId = currentUserId(session);
         if (userId == null || !userId.equals(1150L)) {
             return "redirect:/accessDenied";
         }
@@ -284,7 +383,7 @@ public class GradeController {
 
     @GetMapping("/approval/registrar")
     public String viewPendingRegistrarRequests(ModelMap model, HttpSession session) {
-        Long userId = (Long) session.getAttribute("userid");
+        Long userId = currentUserId(session);
         if (userId == null || !userId.equals(20L)) {
             return "redirect:/accessDenied";
         }
@@ -299,7 +398,7 @@ public class GradeController {
     @PostMapping("/approval/dean/action")
     public String deanAction(@RequestParam Long gmdid, @RequestParam String action,
             HttpSession session, RedirectAttributes redirectAttributes) {
-        Long deanId = (Long) session.getAttribute("userid");
+        Long deanId = currentUserId(session);
         if (deanId == null || !deanId.equals(1150L)) {
             redirectAttributes.addFlashAttribute("error", "Unauthorized access");
             return "redirect:/accessDenied";
@@ -311,7 +410,7 @@ public class GradeController {
     @PostMapping("/approval/registrar/action")
     public String registrarAction(@RequestParam Long gmdid, @RequestParam String action,
             HttpSession session, RedirectAttributes redirectAttributes) {
-        Long registrarId = (Long) session.getAttribute("userid");
+        Long registrarId = currentUserId(session);
         if (registrarId == null || !registrarId.equals(20L)) {
             redirectAttributes.addFlashAttribute("error", "Unauthorized access");
             return "redirect:/accessDenied";
@@ -321,11 +420,30 @@ public class GradeController {
     }
 
     private Long currentTcrid(HttpSession session) {
+        Long tcrid = (Long) session.getAttribute("TCRID");
+
+        if (tcrid != null) {
+            return tcrid;
+        }
+
         Long crsid = (Long) session.getAttribute("CRSID");
         Long trmid = (Long) session.getAttribute("TRMID");
+
         if (crsid == null || trmid == null) {
             return null;
         }
-        return termCourseRepository.findTcridByCrsidAndTrmid(crsid, trmid);
+
+        Long resolvedTcrid = termCourseRepository.findTcridByCrsidAndTrmid(crsid, trmid);
+
+        if (resolvedTcrid != null) {
+            session.setAttribute("TCRID", resolvedTcrid);
+        }
+
+        return resolvedTcrid;
+    }
+
+    private Long currentUserId(HttpSession session) {
+        Users currentUser = (Users) session.getAttribute(SessionConstants.CURRENT_USER);
+        return currentUser == null ? null : currentUser.getUid();
     }
 }

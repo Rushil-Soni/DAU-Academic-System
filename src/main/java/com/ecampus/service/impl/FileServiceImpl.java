@@ -21,7 +21,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.ecampus.model.StudentGradeDTO;
+import com.ecampus.dto.StudentGradeDTO;
 import com.ecampus.model.TermCourses;
 import com.ecampus.model.Terms;
 import com.ecampus.repository.TermCoursesRepository;

@@ -5,7 +5,6 @@ import com.ecampus.auth.service.DatabaseUserDetailsService;
 import com.ecampus.auth.service.RoleAwareSuccessHandler;
 import com.ecampus.auth.user.UserDetailsRepository;
 import com.ecampus.repository.UserRepository;
-import com.ecampus.session.SessionVars;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -45,20 +44,17 @@ public class AuthAutoConfiguration {
     @ConditionalOnMissingBean(AuthenticationSuccessHandler.class)
     public AuthenticationSuccessHandler authenticationSuccessHandler(
             RoleSecurityProperties props,
-            UserRepository userRepository,
-            SessionVars sessionVars) {
+            UserRepository userRepository) {
 
         return new RoleAwareSuccessHandler(
                 props.getDefaultSuccessUrls(),
-                userRepository,
-                sessionVars);
+                userRepository);
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             AuthenticationSuccessHandler authenticationSuccessHandler,
-            SessionVars sessionVars,
             RoleSecurityProperties props) throws Exception {
 
         http.authorizeHttpRequests(auth -> {
@@ -91,12 +87,15 @@ public class AuthAutoConfiguration {
 
         http.logout(logout -> logout
                 .logoutUrl("/logout")
-                .addLogoutHandler((request, response, authentication) -> sessionVars.clear())
                 .invalidateHttpSession(true)
                 .clearAuthentication(true)
                 .deleteCookies("ECAMPUS_SESSION", "JSESSIONID")
                 .logoutSuccessUrl("/login?logout")
                 .permitAll());
+
+        http.exceptionHandling(exception -> exception
+                .accessDeniedHandler((request, response, accessDeniedException) ->
+                        response.sendRedirect(request.getContextPath() + "/login?error=forbidden")));
 
         http.csrf(csrf -> csrf
                 .ignoringRequestMatchers("/h2-console/**"));

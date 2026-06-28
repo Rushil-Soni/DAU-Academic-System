@@ -4,7 +4,8 @@ import com.ecampus.config.RegistrationDeadlineConfig;
 import com.ecampus.dto.CourseRegistrationDTO;
 import com.ecampus.model.*;
 import com.ecampus.repository.UserRepository;
-import com.ecampus.session.SessionVars;
+import com.ecampus.session.SessionConstants;
+import jakarta.servlet.http.HttpSession;
 import com.ecampus.service.*;
 import com.ecampus.util.RomanNumeralUtil;
 
@@ -54,12 +55,11 @@ public class StudentRegistrationController {
     @Autowired
     private UserRepository userRepo;
 
-    @Autowired
-    private SessionVars sessionVars;
+
 
     @GetMapping("/student/registration")
-    public String listStudentRegistrations( Authentication authentication, Model model) {
-        Long studentId = resolveStudentId(authentication);
+    public String listStudentRegistrations( HttpSession session, Model model) {
+        Long studentId = resolveStudentId(session);
         if (studentId == null) {
             model.addAttribute("error", "Unable to resolve student account");
             return "student/student-registration";
@@ -117,9 +117,9 @@ public class StudentRegistrationController {
     @GetMapping("/student/registration/edit")
     public String editRegistration(
             @RequestParam Long strid,
-            Authentication authentication,
+            HttpSession session,
             Model model) {
-        Long studentId = resolveStudentId(authentication);
+        Long studentId = resolveStudentId(session);
         if (studentId == null) {
             model.addAttribute("error", "Unable to resolve student account");
             return "redirect:/student/registration";
@@ -189,9 +189,9 @@ public class StudentRegistrationController {
     @GetMapping("/student/registration/additional")
     public String additionalCoursesPage(
             @RequestParam Long strid,
-            Authentication authentication,
+            HttpSession session,
             Model model) {
-        Long studentId = resolveStudentId(authentication);
+        Long studentId = resolveStudentId(session);
         if (studentId == null) {
             model.addAttribute("error", "Unable to resolve student account");
             return "redirect:/student/registration";
@@ -211,7 +211,7 @@ public class StudentRegistrationController {
         List<CourseRegistrationDTO> backlogCourses = registrationService
             .getBacklogCoursesForStudentBySemester(studentId, strid);
         log.info("Additional courses load: username={}, resolvedStudentId={}, semesterId={}, backlogCount={}",
-                authentication.getName(), studentId, strid, backlogCourses.size());
+                studentId, strid, backlogCourses.size());
         if (backlogCourses.isEmpty() && shouldUseBacklogTestingOverride(student)) {
             backlogCourses = registrationService.getCoreCoursesBySemester(strid).stream()
                 .map(course -> {
@@ -314,19 +314,16 @@ public class StudentRegistrationController {
     public String saveAdditionalCourses(
             @RequestParam Long strid,
             @RequestParam(defaultValue = "") Map<String, String> allParams,
-            Authentication authentication,
+            HttpSession session,
             RedirectAttributes redirectAttributes) {
-        Long studentId = resolveStudentId(authentication);
+        Long studentId = resolveStudentId(session);
         if (studentId == null) {
             redirectAttributes.addFlashAttribute("error", "Unable to resolve student account");
             return "redirect:/student/registration";
         }
 
-        String username = authentication.getName();
-        Long userId = userRepo.findUidByUname(username);
-        if (userId == null) {
-            userId = 0L;
-        }
+        Users user = (Users) session.getAttribute(SessionConstants.CURRENT_USER);
+        Long userId = user == null ? 0L : user.getUid();
 
         List<CourseRegistrationDTO> additionalCourses = parseCoursesFromRequest(allParams);
         List<CourseRegistrationDTO> missingTermCourse = additionalCourses.stream()
@@ -352,20 +349,17 @@ public class StudentRegistrationController {
             @RequestParam Long strid,
             @RequestParam(value = "rows[0].scrid", required = false) Long scrid0,
             @RequestParam(defaultValue = "") Map<String, String> allParams,
-            Authentication authentication,
+            HttpSession session,
             RedirectAttributes redirectAttributes) {
 
-        String username = authentication.getName();
-        Long studentId = resolveStudentId(authentication);
+        Long studentId = resolveStudentId(session);
         if (studentId == null) {
             redirectAttributes.addFlashAttribute("error", "Unable to resolve student account");
             return "redirect:/student/registration";
         }
 
-        Long userId = userRepo.findUidByUname(username);
-        if (userId == null) {
-            userId = 0L;
-        }
+        Users user = (Users) session.getAttribute(SessionConstants.CURRENT_USER);
+        Long userId = user == null ? 0L : user.getUid();
         
         // Parse courses from form submission
         List<CourseRegistrationDTO> submitteeCourses = parseCoursesFromRequest(allParams);
@@ -440,35 +434,29 @@ public class StudentRegistrationController {
         return courses;
     }
 
-    private Long resolveStudentId(Authentication authentication) {
-        String username = authentication == null ? null : authentication.getName();
-        Users user = sessionVars == null ? null : sessionVars.getLoggedInUser();
-        if (user == null && username != null) {
-            user = userRepo.findByUname(username).orElse(null);
-        }
-        if (user == null) {
-            return null;
-        }
-
-        Long studentId = user.getStdid();
-        String instituteId = user.getUnivId();
-        if (instituteId != null && !instituteId.isBlank()) {
-            Long latestStudentId = registrationService.getLatestStudentIdByInstituteId(instituteId);
-            if (latestStudentId != null) {
-                studentId = latestStudentId;
-            }
-        }
-
-        // Student usernames are often institute IDs; use them as a fallback resolver.
-        if (username != null && username.matches("\\d+")) {
-            Long mappedByUsername = registrationService.getLatestStudentIdByInstituteId(username);
-            if (mappedByUsername != null) {
-                studentId = mappedByUsername;
-            }
-        }
-
-        return studentId;
+    private Long resolveStudentId(HttpSession session) {
+    if (session == null) {
+        return null;
     }
+
+    Users user = (Users) session.getAttribute(SessionConstants.CURRENT_USER);
+
+    if (user == null) {
+        return null;
+    }
+
+    Long studentId = user.getStdid();
+    String instituteId = user.getUnivId();
+
+    if (instituteId != null && !instituteId.isBlank()) {
+        Long latestStudentId = registrationService.getLatestStudentIdByInstituteId(instituteId);
+        if (latestStudentId != null) {
+            studentId = latestStudentId;
+        }
+    }
+
+    return studentId;
+}
 
     private Long getLatestRegisteredSemesterId(List<Semesters> semesters, List<StudentRegistrations> regs) {
         if (semesters == null || semesters.isEmpty() || regs == null || regs.isEmpty()) {

@@ -14,11 +14,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
+
 
 import com.ecampus.model.*;
 import com.ecampus.repository.*;
-import com.ecampus.session.SessionVars;
+import com.ecampus.session.SessionConstants;
+import jakarta.servlet.http.HttpSession;
 import com.ecampus.service.*;
 
 @Controller
@@ -26,9 +27,6 @@ public class AddDropController {
 
     @Autowired
     private UserRepository userRepo;
-
-    @Autowired
-    private SessionVars sessionVars;
 
     @Autowired
     private StudentRegistrationService registrationService;
@@ -61,9 +59,9 @@ public class AddDropController {
     private RegistrationOpenForRepository registrationOpenForRepo;
 
     @GetMapping("/student/addDrop")
-    public String getcourses(Authentication authentication, Model model, RedirectAttributes redirectAttributes){
+    public String getcourses(HttpSession session, Model model, RedirectAttributes redirectAttributes){
 
-        Long studentId = resolveStudentId(authentication);
+        Long studentId = resolveStudentId(session);
         if (studentId == null) {
             redirectAttributes.addFlashAttribute("error", "Unable to resolve student account.");
             return "redirect:/student/dashboard";
@@ -112,7 +110,7 @@ public class AddDropController {
             @RequestParam(value = "replaceIds2", required = false) List<String> replaceIds2,
             @RequestParam(value = "dropId3", required = false) String dropId3,
             @RequestParam(value = "replaceIds3", required = false) List<String> replaceIds3,
-            Authentication authentication
+            HttpSession session
     ) {
 
         System.out.println("Add Count: " + addCount);
@@ -124,7 +122,7 @@ public class AddDropController {
         System.out.println("Drop3: " + dropId3);
         System.out.println("Replace List 3: " + replaceIds3);
 
-        Long studentId = resolveStudentId(authentication);
+        Long studentId = resolveStudentId(session);
         if (studentId == null) {
             return "redirect:/student/dashboard";
         }
@@ -177,8 +175,8 @@ public class AddDropController {
     }
 
     @GetMapping("/student/addDrop/view")
-    public String viewAddDropPreferences(Model model, Authentication authentication, RedirectAttributes redirectAttributes) {
-        Long studentId = resolveStudentId(authentication);
+    public String viewAddDropPreferences(Model model, HttpSession session, RedirectAttributes redirectAttributes) {
+        Long studentId = resolveStudentId(session);
         if (studentId == null) {
             redirectAttributes.addFlashAttribute("error", "Unable to resolve student account.");
             return "redirect:/student/dashboard";
@@ -234,17 +232,16 @@ public class AddDropController {
         return map;
     }
 
-    private Long resolveStudentId(Authentication authentication) {
-        Users user = sessionVars == null ? null : sessionVars.getLoggedInUser();
-        if (user != null) {
-            return user.getStdid();
+    private Long resolveStudentId(HttpSession session) {
+        if(session == null){
+            return null;
         }
-
-        if (authentication == null || authentication.getName() == null) {
+        Users user = (Users) session.getAttribute(SessionConstants.CURRENT_USER);
+        if (user == null) {
             return null;
         }
 
-        return userRepo.findIdByUname(authentication.getName());
+        return user.getStdid();
     }
     
 }

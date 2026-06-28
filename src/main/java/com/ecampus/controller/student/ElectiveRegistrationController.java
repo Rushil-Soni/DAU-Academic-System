@@ -9,9 +9,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
@@ -22,7 +20,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.ecampus.model.*;
 import com.ecampus.repository.*;
-import com.ecampus.session.SessionVars;
+import com.ecampus.session.SessionConstants;
+import jakarta.servlet.http.HttpSession;
 import com.ecampus.service.*;
 
 @Controller
@@ -30,9 +29,6 @@ public class ElectiveRegistrationController {
 
     @Autowired
     private UserRepository userRepo;
-
-    @Autowired
-    private SessionVars sessionVars;
 
     @Autowired
     private StudentRegistrationService registrationService;
@@ -56,12 +52,9 @@ public class ElectiveRegistrationController {
     private StudentCourseRequirementsRepository studCourseReqRepo;
 
     @GetMapping("/student/electiveRegistration")
-    public String getcourses(Authentication authentication, Model model, RedirectAttributes redirectAttributes){
+    public String getcourses(HttpSession session, Model model, RedirectAttributes redirectAttributes){
 
-        String username = authentication.getName();
-        System.out.println("[ELECTIVE DEBUG] Username: " + username);
-
-        Long studentId = resolveStudentId(authentication);
+        Long studentId = resolveStudentId(session);
         System.out.println("[ELECTIVE DEBUG] Student ID: " + studentId);
         if (studentId == null) {
             redirectAttributes.addFlashAttribute("error", "Unable to resolve student account.");
@@ -123,7 +116,7 @@ public class ElectiveRegistrationController {
 
     @PostMapping("/student/submitPreference")
     @Transactional
-    public String handleSubmission(@RequestParam Map<String, String> allParams, Authentication authentication, Model model) {
+    public String handleSubmission(@RequestParam Map<String, String> allParams, HttpSession session, Model model) {
         
         // 1. To store: Map<SlotNumber, List<TcrId>> (Sorted by Rank)
         // Temporary helper to store {SlotNo -> {Rank -> TcrId}}
@@ -169,7 +162,7 @@ public class ElectiveRegistrationController {
         System.out.println("2. Slot Priorities: " + slotPriorities);
         System.out.println("3. Elective Requirements: " + electiveRequirements);
 
-        Long studentId = resolveStudentId(authentication);
+        Long studentId = resolveStudentId(session);
         if (studentId == null) {
             return "redirect:/student/dashboard";
         }
@@ -231,9 +224,9 @@ public class ElectiveRegistrationController {
     }
 
     @GetMapping("/student/electiveRegistration/view")
-    public String viewRegistration(Authentication authentication, Model model, RedirectAttributes redirectAttributes){
+    public String viewRegistration(HttpSession session, Model model, RedirectAttributes redirectAttributes){
 
-        Long studentId = resolveStudentId(authentication);
+        Long studentId = resolveStudentId(session);
         if (studentId == null) {
             redirectAttributes.addFlashAttribute("error", "Unable to resolve student account.");
             return "redirect:/student/dashboard";
@@ -270,17 +263,16 @@ public class ElectiveRegistrationController {
         return "student/viewElectiveRegistration";
     }
 
-    private Long resolveStudentId(Authentication authentication) {
-        Users user = sessionVars == null ? null : sessionVars.getLoggedInUser();
-        if (user != null) {
-            return user.getStdid();
+    private Long resolveStudentId(HttpSession session) {
+        if(session == null){
+            return null;
         }
-
-        if (authentication == null || authentication.getName() == null) {
+        Users user = (Users) session.getAttribute(SessionConstants.CURRENT_USER);
+        if (user == null) {
             return null;
         }
 
-        return userRepo.findIdByUname(authentication.getName());
+        return user.getStdid();
     }
 
 }

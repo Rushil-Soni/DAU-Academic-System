@@ -1,4 +1,5 @@
 package com.ecampus.model;
+import java.io.Serializable;
 
 import java.time.LocalDateTime;
 
@@ -14,7 +15,9 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "users", schema = "ec2")
-public class Users implements AuthUserDetails {
+public class Users implements AuthUserDetails,Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private static final String ROLE_ADMIN = "901";
     private static final String ROLE_DEAN = "902";
