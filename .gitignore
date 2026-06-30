@@ -47,6 +47,7 @@ Thumbs.db
 # Sensitive configuration
 application.properties
 src/main/resources/application.properties
+src/main/resources/global-constants.properties
 src/main/resources/application.yml
 # Database dumps
 *.sql

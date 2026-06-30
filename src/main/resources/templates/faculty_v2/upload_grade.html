@@ -180,7 +180,13 @@
 
               <tbody>
                 <tr th:each="g, stat : ${gradeForm.gradesList}">
-                  <td th:text="${g.studentId}"></td>
+                  <td>
+                    <span th:text="${g.studentId}"></span>
+                    <input
+                      type="hidden"
+                      th:field="*{gradesList[__${stat.index}__].studentId}"
+                    />
+                  </td>
 
                   <td th:text="${g.studentName}"></td>
 

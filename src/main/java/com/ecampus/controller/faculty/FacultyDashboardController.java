@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -31,6 +30,7 @@ import com.ecampus.service.FileService;
 import com.ecampus.service.GradeService;
 import com.ecampus.service.GlobalConstantsService;
 import com.ecampus.session.SessionConstants;
+import com.ecampus.util.LoggedUser;
 import jakarta.servlet.http.HttpSession;
 
 @Controller
@@ -63,7 +63,7 @@ public class FacultyDashboardController {
 
     @GetMapping("/dashboard")
     public String showCurrentSemesterCourses(Model model, HttpSession session) {
-        Users faculty = currentFaculty(session);
+        LoggedUser faculty = currentFaculty(session);
         if (faculty == null) {
             return "redirect:/login";
         }
@@ -72,7 +72,7 @@ public class FacultyDashboardController {
         // Terms latestTerm = currentTermId == null
         //         ? null
         //         : termsRepository.findById(currentTermId).orElse(null);
-        Terms latestTerm = termsRepository.findById(50L).orElse(null);
+        Terms latestTerm = termsRepository.findById(51L).orElse(null);
         if (latestTerm == null) {
             model.addAttribute("faculty", faculty);
             model.addAttribute("termCourses", List.of());
@@ -144,7 +144,7 @@ public class FacultyDashboardController {
             HttpSession session,
             RedirectAttributes redirectAttributes) {
 
-        Users faculty = currentFaculty(session);
+        LoggedUser faculty = currentFaculty(session);
         if (faculty == null) {
             return "redirect:/login";
         }
@@ -162,8 +162,14 @@ public class FacultyDashboardController {
             return "redirect:/faculty/change-password";
         }
 
-        faculty.setPassword(passwordEncoder.encode(newPassword));
-        userRepository.save(faculty);
+        Users facultyEntity = userRepository.findById(faculty.getUid()).orElse(null);
+        if (facultyEntity == null) {
+            redirectAttributes.addFlashAttribute("error", "Faculty account not found");
+            return "redirect:/faculty/change-password";
+        }
+
+        facultyEntity.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(facultyEntity);
 
         redirectAttributes.addFlashAttribute("success", "Password changed successfully");
         return "redirect:/faculty/change-password";
@@ -174,7 +180,7 @@ public class FacultyDashboardController {
             Model model,
             HttpSession session) {
 
-        Users faculty = currentFaculty(session);
+        LoggedUser faculty = currentFaculty(session);
         if (faculty == null) {
             return "redirect:/login";
         }
@@ -203,7 +209,7 @@ public class FacultyDashboardController {
             Model model,
             HttpSession session) {
 
-        Users faculty = currentFaculty(session);
+        LoggedUser faculty = currentFaculty(session);
         if (faculty == null) {
             return "redirect:/login";
         }
@@ -232,7 +238,7 @@ public class FacultyDashboardController {
             @RequestParam String termName,
             HttpSession session) {
 
-        Users faculty = currentFaculty(session);
+        LoggedUser faculty = currentFaculty(session);
         if (faculty == null) {
             return List.of();
         }
@@ -302,7 +308,7 @@ public class FacultyDashboardController {
 
     @GetMapping("/upload-course")
     public String uploadCourseForm(Model model, HttpSession session) {
-        Users faculty = currentFaculty(session);
+        LoggedUser faculty = currentFaculty(session);
         if (faculty == null) {
             return "redirect:/login";
         }
@@ -336,7 +342,7 @@ public class FacultyDashboardController {
 
         Map<String, Object> response = new HashMap<>();
 
-        Users faculty = currentFaculty(session);
+        LoggedUser faculty = currentFaculty(session);
         if (faculty == null) {
             response.put("success", false);
             response.put("message", "Session expired. Please login again.");
@@ -361,15 +367,15 @@ public class FacultyDashboardController {
         }
     }
 
-    private Users currentFaculty(HttpSession session) {
+    private LoggedUser currentFaculty(HttpSession session) {
 
-        Users user = (Users) session.getAttribute(SessionConstants.CURRENT_USER);
+        LoggedUser user = (LoggedUser) session.getAttribute(SessionConstants.CURRENT_USER);
 
         if (user == null) {
             return null;
         }
 
-        if (!"FACULTY".equalsIgnoreCase(user.getrole())) {
+        if (!user.isFaculty()) {
             return null;
         }
 

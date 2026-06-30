@@ -3,6 +3,8 @@ package com.ecampus.auth.service;
 import com.ecampus.model.Users;
 import com.ecampus.repository.UserRepository;
 import com.ecampus.session.SessionConstants;
+import com.ecampus.util.LoggedUser;
+
 import jakarta.servlet.http.HttpSession;
 
 import jakarta.servlet.ServletException;
@@ -68,7 +70,7 @@ public class RoleAwareSuccessHandler extends SavedRequestAwareAuthenticationSucc
             return;
         }
 
-        Users user = userRepository.findByUname(authentication.getName()).orElse(null);
+        Users user = userRepository.findWithName(authentication.getName()).orElse(null);
 
         if (user == null ||
                 user.getUnivId() == null ||
@@ -78,6 +80,7 @@ public class RoleAwareSuccessHandler extends SavedRequestAwareAuthenticationSucc
             return;
         }
 
-        session.setAttribute(SessionConstants.CURRENT_USER, user);
+        LoggedUser l_user = new LoggedUser(user);
+        session.setAttribute(SessionConstants.CURRENT_USER, l_user);
     }
 }

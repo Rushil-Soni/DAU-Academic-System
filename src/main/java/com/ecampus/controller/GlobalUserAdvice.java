@@ -1,8 +1,8 @@
 package com.ecampus.controller;
 
 import com.ecampus.service.GlobalConstantsService;
-import com.ecampus.model.Users;
 import com.ecampus.session.SessionConstants;
+import com.ecampus.util.LoggedUser;
 import jakarta.servlet.http.HttpSession;
 
 import org.springframework.ui.Model;
@@ -21,12 +21,11 @@ public class GlobalUserAdvice {
     @ModelAttribute
     public void addGlobalAttributes(Model model,HttpSession session) {
 
-        Users currentUser = session == null
+        LoggedUser currentUser = session == null
                 ? null
-                : (Users) session.getAttribute(SessionConstants.CURRENT_USER);
+                : (LoggedUser) session.getAttribute(SessionConstants.CURRENT_USER);
 
         model.addAttribute("currentUser", currentUser);
-        model.addAttribute("sessionVars", currentUser);
         model.addAttribute(
                 "currentAcademicYearName",
                 getDisplayValue(globalConstantsService.getCurrentAcademicYearName()));
