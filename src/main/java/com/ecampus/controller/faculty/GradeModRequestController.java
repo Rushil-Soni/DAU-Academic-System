@@ -15,10 +15,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.ecampus.dto.StudentGradeDTO;
 import com.ecampus.dto.StudentGradeDTOWrapper;
-import com.ecampus.model.Users;
-import com.ecampus.repository.TermCoursesRepository;
 import com.ecampus.session.SessionConstants;
 import com.ecampus.service.GradeService;
+import com.ecampus.util.LoggedUser;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -29,8 +28,6 @@ public class GradeModRequestController {
     @Autowired
     private GradeService gradeService;
 
-    @Autowired
-    private TermCoursesRepository termCourseRepository;
 
     @InitBinder("gradeForm")
     public void initBinder(WebDataBinder binder) {
@@ -46,8 +43,9 @@ public class GradeModRequestController {
             HttpSession session,
             RedirectAttributes redirectAttributes) {
 
-        Users currentUser = (Users) session.getAttribute(SessionConstants.CURRENT_USER);
+        LoggedUser currentUser = (LoggedUser) session.getAttribute(SessionConstants.CURRENT_USER);
         Long uid = currentUser == null ? null : currentUser.getUid();
+        Long tcrid = (Long) session.getAttribute("TCRID");
         Long trmid = (Long) session.getAttribute("TRMID");
         Long crsid = (Long) session.getAttribute("CRSID");
         Long examTypeId = (Long) session.getAttribute("examTypeId");
@@ -61,9 +59,8 @@ public class GradeModRequestController {
             return "redirect:/faculty/dashboard";
         }
 
-        Long tcrid = termCourseRepository.findTcridByCrsidAndTrmid(crsid, trmid);
         if (tcrid == null) {
-            redirectAttributes.addFlashAttribute("error", "Invalid term-course combination.");
+            redirectAttributes.addFlashAttribute("error", "Invalid or expired course context.");
             return "redirect:/faculty/dashboard";
         }
 

@@ -28,11 +28,11 @@ import com.ecampus.dto.StudentGradeDTOWrapper;
 import com.ecampus.model.Courses;
 import com.ecampus.model.Grade;
 import com.ecampus.model.TermCourses;
-import com.ecampus.model.Users;
 import com.ecampus.repository.TermCoursesRepository;
 import com.ecampus.session.SessionConstants;
 import com.ecampus.service.FileService;
 import com.ecampus.service.GradeService;
+import com.ecampus.util.LoggedUser;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -270,9 +270,12 @@ public class GradeController {
         if (tc == null) {
             return "redirect:/faculty/dashboard";
         }
+
+        session.setAttribute("TCRID", tcrid);
         session.setAttribute("CRSID", tc.getTcrcrsid());
         session.setAttribute("TRMID", tc.getTcrtrmid());
         session.setAttribute("examTypeId", 1L);
+
         return "redirect:/grades/update/form";
     }
 
@@ -336,7 +339,6 @@ public class GradeController {
         model.addAttribute("gradeForm", gradeForm);
         return "faculty_v2/revise_IGrade";
     }
-
 
     @GetMapping("/approval/status")
     public String viewStatus(@RequestParam(name = "tcrid", required = false) Long tcrid,
@@ -443,7 +445,7 @@ public class GradeController {
     }
 
     private Long currentUserId(HttpSession session) {
-        Users currentUser = (Users) session.getAttribute(SessionConstants.CURRENT_USER);
+        LoggedUser currentUser = (LoggedUser) session.getAttribute(SessionConstants.CURRENT_USER);
         return currentUser == null ? null : currentUser.getUid();
     }
 }

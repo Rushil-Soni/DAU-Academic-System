@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.ecampus.model.*;
 import com.ecampus.repository.*;
 import com.ecampus.session.SessionConstants;
+import com.ecampus.util.LoggedUser;
 import jakarta.servlet.http.HttpSession;
 import com.ecampus.service.*;
 
@@ -236,7 +237,7 @@ public class AddDropController {
         if(session == null){
             return null;
         }
-        Users user = (Users) session.getAttribute(SessionConstants.CURRENT_USER);
+        LoggedUser user = (LoggedUser) session.getAttribute(SessionConstants.CURRENT_USER);
         if (user == null) {
             return null;
         }

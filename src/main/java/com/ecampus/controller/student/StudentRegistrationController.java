@@ -7,6 +7,7 @@ import com.ecampus.repository.UserRepository;
 import com.ecampus.session.SessionConstants;
 import jakarta.servlet.http.HttpSession;
 import com.ecampus.service.*;
+import com.ecampus.util.LoggedUser;
 import com.ecampus.util.RomanNumeralUtil;
 
 
@@ -322,7 +323,7 @@ public class StudentRegistrationController {
             return "redirect:/student/registration";
         }
 
-        Users user = (Users) session.getAttribute(SessionConstants.CURRENT_USER);
+        LoggedUser user = (LoggedUser) session.getAttribute(SessionConstants.CURRENT_USER);
         Long userId = user == null ? 0L : user.getUid();
 
         List<CourseRegistrationDTO> additionalCourses = parseCoursesFromRequest(allParams);
@@ -358,7 +359,7 @@ public class StudentRegistrationController {
             return "redirect:/student/registration";
         }
 
-        Users user = (Users) session.getAttribute(SessionConstants.CURRENT_USER);
+        LoggedUser user = (LoggedUser) session.getAttribute(SessionConstants.CURRENT_USER);
         Long userId = user == null ? 0L : user.getUid();
         
         // Parse courses from form submission
@@ -439,7 +440,7 @@ public class StudentRegistrationController {
         return null;
     }
 
-    Users user = (Users) session.getAttribute(SessionConstants.CURRENT_USER);
+    LoggedUser user = (LoggedUser) session.getAttribute(SessionConstants.CURRENT_USER);
 
     if (user == null) {
         return null;

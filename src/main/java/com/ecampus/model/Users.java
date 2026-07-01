@@ -1,9 +1,11 @@
 package com.ecampus.model;
 import java.io.Serializable;
 
+
 import java.time.LocalDateTime;
 
 import com.ecampus.auth.user.AuthUserDetails;
+import com.ecampus.util.UserRoles;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -15,15 +17,10 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "users", schema = "ec2")
+
 public class Users implements AuthUserDetails,Serializable {
 
     private static final long serialVersionUID = 1L;
-
-    private static final String ROLE_ADMIN = "901";
-    private static final String ROLE_DEAN = "902";
-    private static final String ROLE_REGISTRAR = "905";
-    private static final String ROLE_FACULTY = "913";
-    private static final String ROLE_STUDENT = "914";
 
     @Id
     @Column(name = "uid")
@@ -228,23 +225,23 @@ public class Users implements AuthUserDetails,Serializable {
 
     @Override
     public String getrole() {
-        if (ROLE_STUDENT.equals(this.urole)) {
+        if (UserRoles.STUDENT.equals(this.urole)) {
             return "STUDENT";
         }
 
-        if (ROLE_FACULTY.equals(this.urole)) {
+        if (UserRoles.FACULTY.equals(this.urole)) {
             return "FACULTY";
         }
 
-        if (ROLE_ADMIN.equals(this.urole)) {
+        if (UserRoles.ADMIN.equals(this.urole)) {
             return "ADMIN";
         }
 
-        if (ROLE_REGISTRAR.equals(this.urole)) {
+        if (UserRoles.REGISTRAR.equals(this.urole)) {
             return "REGISTRAR";
         }
 
-        if (ROLE_DEAN.equals(this.urole)) {
+        if (UserRoles.DEAN.equals(this.urole)) {
             return "DEAN";
         }
 
