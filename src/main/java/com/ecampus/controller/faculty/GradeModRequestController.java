@@ -18,6 +18,7 @@ import com.ecampus.dto.StudentGradeDTOWrapper;
 import com.ecampus.session.SessionConstants;
 import com.ecampus.service.GradeService;
 import com.ecampus.util.LoggedUser;
+import com.ecampus.util.UnAuthorisedUserException;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -44,7 +45,11 @@ public class GradeModRequestController {
             RedirectAttributes redirectAttributes) {
 
         LoggedUser currentUser = (LoggedUser) session.getAttribute(SessionConstants.CURRENT_USER);
-        Long uid = currentUser == null ? null : currentUser.getUid();
+        if (currentUser == null) {
+            throw new UnAuthorisedUserException();
+        }
+
+        Long uid = currentUser.getUid();
         Long tcrid = (Long) session.getAttribute("TCRID");
         Long trmid = (Long) session.getAttribute("TRMID");
         Long crsid = (Long) session.getAttribute("CRSID");
@@ -54,7 +59,7 @@ public class GradeModRequestController {
                 ? "redirect:/grades/reviseIGrade/form"
                 : "redirect:/grades/update/form";
 
-        if (uid == null || trmid == null || crsid == null || examTypeId == null) {
+        if (trmid == null || crsid == null || examTypeId == null) {
             redirectAttributes.addFlashAttribute("error", "Session expired or incomplete context.");
             return "redirect:/faculty/dashboard";
         }

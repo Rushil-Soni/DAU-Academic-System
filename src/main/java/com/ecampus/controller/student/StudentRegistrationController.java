@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpSession;
 import com.ecampus.service.*;
 import com.ecampus.util.LoggedUser;
 import com.ecampus.util.RomanNumeralUtil;
+import com.ecampus.util.UnAuthorisedUserException;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -323,8 +324,8 @@ public class StudentRegistrationController {
             return "redirect:/student/registration";
         }
 
-        LoggedUser user = (LoggedUser) session.getAttribute(SessionConstants.CURRENT_USER);
-        Long userId = user == null ? 0L : user.getUid();
+        LoggedUser user = currentLoggedUser(session);
+        Long userId = user.getUid();
 
         List<CourseRegistrationDTO> additionalCourses = parseCoursesFromRequest(allParams);
         List<CourseRegistrationDTO> missingTermCourse = additionalCourses.stream()
@@ -359,8 +360,8 @@ public class StudentRegistrationController {
             return "redirect:/student/registration";
         }
 
-        LoggedUser user = (LoggedUser) session.getAttribute(SessionConstants.CURRENT_USER);
-        Long userId = user == null ? 0L : user.getUid();
+        LoggedUser user = currentLoggedUser(session);
+        Long userId = user.getUid();
         
         // Parse courses from form submission
         List<CourseRegistrationDTO> submitteeCourses = parseCoursesFromRequest(allParams);
@@ -440,11 +441,7 @@ public class StudentRegistrationController {
         return null;
     }
 
-    LoggedUser user = (LoggedUser) session.getAttribute(SessionConstants.CURRENT_USER);
-
-    if (user == null) {
-        return null;
-    }
+    LoggedUser user = currentLoggedUser(session);
 
     Long studentId = user.getStdid();
     String instituteId = user.getUnivId();
@@ -458,6 +455,19 @@ public class StudentRegistrationController {
 
     return studentId;
 }
+
+    private LoggedUser currentLoggedUser(HttpSession session) {
+        if (session == null) {
+            throw new UnAuthorisedUserException();
+        }
+
+        LoggedUser user = (LoggedUser) session.getAttribute(SessionConstants.CURRENT_USER);
+        if (user == null) {
+            throw new UnAuthorisedUserException();
+        }
+
+        return user;
+    }
 
     private Long getLatestRegisteredSemesterId(List<Semesters> semesters, List<StudentRegistrations> regs) {
         if (semesters == null || semesters.isEmpty() || regs == null || regs.isEmpty()) {

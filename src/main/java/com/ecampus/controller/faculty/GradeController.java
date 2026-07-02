@@ -33,6 +33,7 @@ import com.ecampus.session.SessionConstants;
 import com.ecampus.service.FileService;
 import com.ecampus.service.GradeService;
 import com.ecampus.util.LoggedUser;
+import com.ecampus.util.UnAuthorisedUserException;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -446,6 +447,10 @@ public class GradeController {
 
     private Long currentUserId(HttpSession session) {
         LoggedUser currentUser = (LoggedUser) session.getAttribute(SessionConstants.CURRENT_USER);
-        return currentUser == null ? null : currentUser.getUid();
+        if (currentUser == null) {
+            throw new UnAuthorisedUserException();
+        }
+
+        return currentUser.getUid();
     }
 }
