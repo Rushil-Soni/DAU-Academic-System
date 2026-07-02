@@ -24,19 +24,15 @@ public class LoggedUser implements Serializable {
         return user.getStdid();
     }
 
-    public String getUname() {
+    public String getUsername() {
         return user.getUname();
     }
 
-    public String getUfullname() {
+    public String getUserfullname() {
         return user.getUfullname();
     }
 
-    public String getUrole() {
-        return user.getUrole();
-    }
-
-    public String getUemail() {
+    public String getUseremail() {
         return user.getUemail();
     }
 

@@ -31,6 +31,7 @@ import com.ecampus.service.GradeService;
 import com.ecampus.service.GlobalConstantsService;
 import com.ecampus.session.SessionConstants;
 import com.ecampus.util.LoggedUser;
+import com.ecampus.util.UnAuthorisedUserException;
 import jakarta.servlet.http.HttpSession;
 
 @Controller
@@ -372,7 +373,7 @@ public class FacultyDashboardController {
         LoggedUser user = (LoggedUser) session.getAttribute(SessionConstants.CURRENT_USER);
 
         if (user == null) {
-            return null;
+            throw new UnAuthorisedUserException();
         }
 
         if (!user.isFaculty()) {

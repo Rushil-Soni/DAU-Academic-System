@@ -20,6 +20,7 @@ import com.ecampus.model.*;
 import com.ecampus.repository.*;
 import com.ecampus.session.SessionConstants;
 import com.ecampus.util.LoggedUser;
+import com.ecampus.util.UnAuthorisedUserException;
 import jakarta.servlet.http.HttpSession;
 import com.ecampus.service.*;
 
@@ -235,11 +236,11 @@ public class AddDropController {
 
     private Long resolveStudentId(HttpSession session) {
         if(session == null){
-            return null;
+            throw new UnAuthorisedUserException();
         }
         LoggedUser user = (LoggedUser) session.getAttribute(SessionConstants.CURRENT_USER);
         if (user == null) {
-            return null;
+            throw new UnAuthorisedUserException();
         }
 
         return user.getStdid();
