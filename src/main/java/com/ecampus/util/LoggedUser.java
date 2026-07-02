@@ -9,7 +9,7 @@ public class LoggedUser implements Serializable {
         this.user=user;
     }
 
-    public Long getUid(){
+    public Long getUID(){
         return user.getUid();
     }
 
@@ -17,22 +17,22 @@ public class LoggedUser implements Serializable {
         return user.getUnivId();
     }
 
-    public Long getStdid() {
+    public Long getStdId() {
         if(!this.isStudent()){
             throw new IllegalStateException("User is not a student");
         }
         return user.getStdid();
     }
 
-    public String getUsername() {
+    public String getUserName() {
         return user.getUname();
     }
 
-    public String getUserfullname() {
+    public String getUserFullName() {
         return user.getUfullname();
     }
 
-    public String getUseremail() {
+    public String getUserEmail() {
         return user.getUemail();
     }
 
