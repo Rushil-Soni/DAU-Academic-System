@@ -49,7 +49,7 @@ public class GradeModRequestController {
             throw new UnAuthorisedUserException();
         }
 
-        Long uid = currentUser.getUid();
+        Long uid = currentUser.getUID();
         Long tcrid = (Long) session.getAttribute("TCRID");
         Long trmid = (Long) session.getAttribute("TRMID");
         Long crsid = (Long) session.getAttribute("CRSID");

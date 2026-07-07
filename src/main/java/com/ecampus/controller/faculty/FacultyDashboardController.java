@@ -75,7 +75,7 @@ public class FacultyDashboardController {
         //         : termsRepository.findById(currentTermId).orElse(null);
         Terms latestTerm = termsRepository.findById(51L).orElse(null);
         if (latestTerm == null) {
-            model.addAttribute("faculty", faculty);
+            model.addAttribute("faculty", facultyView(faculty));
             model.addAttribute("termCourses", List.of());
             model.addAttribute("errorMessage", "No active term found.");
             return "faculty_v2/dashboard";
@@ -93,7 +93,7 @@ public class FacultyDashboardController {
 
         for (Terms previousTerm : previousTermsToShow) {
             List<TermCourses> courses = termCoursesRepository.findFacultyCoursesInTerm(
-                    previousTerm.getTrmid(), faculty.getUid());
+                    previousTerm.getTrmid(), faculty.getUID());
 
             if (!courses.isEmpty()) {
                 previousCoursesByTerm.put(previousTerm.getTrmname(), courses);
@@ -106,7 +106,7 @@ public class FacultyDashboardController {
         }
 
         List<TermCourses> termCourses = termCoursesRepository.findFacultyCoursesInTerm(
-                latestTerm.getTrmid(), faculty.getUid());
+                latestTerm.getTrmid(), faculty.getUID());
 
         Map<Long, Long> studentCounts = new HashMap<>();
         Map<Long, Boolean> gradeStatusMap = new HashMap<>();
@@ -114,7 +114,7 @@ public class FacultyDashboardController {
         fillStudentCounts(termCourses, studentCounts);
         fillGradeStatuses(termCourses, gradeStatusMap);
 
-        model.addAttribute("faculty", faculty);
+        model.addAttribute("faculty", facultyView(faculty));
         model.addAttribute("latestTerm", latestTerm);
         model.addAttribute("termCourses", termCourses);
         model.addAttribute("studentCounts", studentCounts);
@@ -163,7 +163,7 @@ public class FacultyDashboardController {
             return "redirect:/faculty/change-password";
         }
 
-        Users facultyEntity = userRepository.findById(faculty.getUid()).orElse(null);
+        Users facultyEntity = userRepository.findById(faculty.getUID()).orElse(null);
         if (facultyEntity == null) {
             redirectAttributes.addFlashAttribute("error", "Faculty account not found");
             return "redirect:/faculty/change-password";
@@ -190,7 +190,7 @@ public class FacultyDashboardController {
         Terms latestTerm = termsRepository.findById(35L).orElse(null);
         if (latestTerm != null) {
             model.addAttribute("courses",
-                    termCoursesRepository.findFacultyCoursesInTerm(latestTerm.getTrmid(), faculty.getUid()));
+                    termCoursesRepository.findFacultyCoursesInTerm(latestTerm.getTrmid(), faculty.getUID()));
         }
 
         if (tcrid != null) {
@@ -221,7 +221,7 @@ public class FacultyDashboardController {
             return "faculty_v2/course_registrations";
         }
 
-        if (course.getTcrfacultyid() != null && !course.getTcrfacultyid().equals(faculty.getUid())) {
+        if (course.getTcrfacultyid() != null && !course.getTcrfacultyid().equals(faculty.getUID())) {
             model.addAttribute("error", "You do not have permission to view registrations for this course.");
             return "faculty_v2/course_registrations";
         }
@@ -251,7 +251,7 @@ public class FacultyDashboardController {
 
         List<Map<String, Object>> result = new ArrayList<>();
 
-        for (TermCourses tc : termCoursesRepository.findFacultyCoursesInTerm(term.getTrmid(), faculty.getUid())) {
+        for (TermCourses tc : termCoursesRepository.findFacultyCoursesInTerm(term.getTrmid(), faculty.getUID())) {
             Map<String, Object> map = new HashMap<>();
             map.put("id", tc.getTcrid());
             map.put("name", tc.getCourse().getCrsname() + " (" + tc.getCourse().getCrscode() + ")");
@@ -322,7 +322,7 @@ public class FacultyDashboardController {
         }
 
         model.addAttribute("courses",
-                termCoursesRepository.findFacultyCoursesInTerm(latestTerm.getTrmid(), faculty.getUid()));
+                termCoursesRepository.findFacultyCoursesInTerm(latestTerm.getTrmid(), faculty.getUID()));
         model.addAttribute("currentTerm", latestTerm);
         model.addAttribute("academicYear", latestTerm.getAcademicYear());
 
@@ -353,7 +353,7 @@ public class FacultyDashboardController {
         try {
             TermCourses tc = termCoursesRepository.findById(tcrid).orElse(null);
 
-            if (tc == null || (tc.getTcrfacultyid() != null && !tc.getTcrfacultyid().equals(faculty.getUid()))) {
+            if (tc == null || (tc.getTcrfacultyid() != null && !tc.getTcrfacultyid().equals(faculty.getUID()))) {
                 response.put("success", false);
                 response.put("message", "You do not have permission to upload for this course.");
                 return response;
@@ -381,6 +381,15 @@ public class FacultyDashboardController {
         }
 
         return user;
+    }
+
+    private Map<String, Object> facultyView(LoggedUser faculty) {
+        Map<String, Object> view = new HashMap<>();
+        view.put("uid", faculty.getUID());
+        view.put("uname", faculty.getUserName());
+        view.put("univId", faculty.getUnivId());
+        view.put("uemail", faculty.getUserEmail());
+        return view;
     }
 
     private List<Terms> previousTerms(Terms latestTerm, List<Terms> sameYearTerms) {

@@ -325,7 +325,7 @@ public class StudentRegistrationController {
         }
 
         LoggedUser user = currentLoggedUser(session);
-        Long userId = user.getUid();
+        Long userId = user.getUID();
 
         List<CourseRegistrationDTO> additionalCourses = parseCoursesFromRequest(allParams);
         List<CourseRegistrationDTO> missingTermCourse = additionalCourses.stream()
@@ -361,7 +361,7 @@ public class StudentRegistrationController {
         }
 
         LoggedUser user = currentLoggedUser(session);
-        Long userId = user.getUid();
+        Long userId = user.getUID();
         
         // Parse courses from form submission
         List<CourseRegistrationDTO> submitteeCourses = parseCoursesFromRequest(allParams);
@@ -443,7 +443,7 @@ public class StudentRegistrationController {
 
     LoggedUser user = currentLoggedUser(session);
 
-    Long studentId = user.getStdid();
+    Long studentId = user.getStdId();
     String instituteId = user.getUnivId();
 
     if (instituteId != null && !instituteId.isBlank()) {

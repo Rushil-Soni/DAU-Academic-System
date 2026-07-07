@@ -451,6 +451,6 @@ public class GradeController {
             throw new UnAuthorisedUserException();
         }
 
-        return currentUser.getUid();
+        return currentUser.getUID();
     }
 }
