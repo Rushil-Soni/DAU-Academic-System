@@ -274,7 +274,7 @@ public class ElectiveRegistrationController {
             throw new UnAuthorisedUserException();
         }
 
-        return user.getStdid();
+        return user.getStdId();
     }
 
 }

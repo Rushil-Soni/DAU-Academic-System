@@ -243,7 +243,7 @@ public class AddDropController {
             throw new UnAuthorisedUserException();
         }
 
-        return user.getStdid();
+        return user.getStdId();
     }
     
 }
